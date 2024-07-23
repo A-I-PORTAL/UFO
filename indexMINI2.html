@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simplified UFO Game with Enemies and Laser - Fixed</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #gameArea {
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-gap: 10px;
+        }
+        #laserContainer {
+            grid-column: 2;
+            grid-row: 2;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        }
+        #laserBtn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(to bottom, #ff6b6b, #ff0000);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <svg id="gameArea" viewBox="0 0 1000 1000">
+        <defs>
+            <linearGradient id="enemyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FF0000" />
+                <stop offset="50%" stop-color="#800000" />
+                <stop offset="100%" stop-color="#400000" />
+            </linearGradient>
+            <radialGradient id="enemySmokeGradient">
+                <stop offset="0%" stop-color="#808080" />
+                <stop offset="50%" stop-color="#404040" />
+                <stop offset="100%" stop-color="#000000" />
+            </radialGradient>
+            <radialGradient id="explosionGradient">
+                <stop offset="0%" stop-color="#FFFF00" />
+                <stop offset="25%" stop-color="#FF8C00" />
+                <stop offset="50%" stop-color="#FF4500" />
+                <stop offset="75%" stop-color="#8B0000" />
+                <stop offset="100%" stop-color="rgba(0,0,0,0)" />
+            </radialGradient>
+            <filter id="explosionBlur">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="10" />
+            </filter>
+        </defs>
+        <g id="enemies"></g>
+        <g id="lasers"></g>
+        <g id="explosions"></g>
+    </svg>
+
+    <div id="controls">
+        <div id="laserContainer">
+            <button id="laserBtn"></button>
+        </div>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const enemiesGroup = document.getElementById('enemies');
+        const lasersGroup = document.getElementById('lasers');
+        const explosionsGroup = document.getElementById('explosions');
+        const laserBtn = document.getElementById('laserBtn');
+        const laserContainer = document.getElementById('laserContainer');
+
+        const enemies = [];
+        const lasers = [];
+        const explosions = [];
+
+        let playerX = 500;
+        let playerY = 800;
+        let laserAngle = 0;
+        let isFiring = false;
+
+        function createEnemy() {
+            if (enemies.length >= 3) return;
+
+            const enemy = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            const body = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            body.setAttribute("fill", "url(#enemyGradient)");
+            body.setAttribute("stroke", "#808080");
+            body.setAttribute("stroke-width", "2");
+            enemy.appendChild(body);
+
+            for (let i = 0; i < 2; i++) {
+                const light = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                light.setAttribute("r", 2);
+                light.setAttribute("fill", "red");
+                enemy.appendChild(light);
+            }
+
+            const smoke = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            smoke.setAttribute("fill", "url(#enemySmokeGradient)");
+            enemy.appendChild(smoke);
+            
+            const edges = [
+                {x: Math.random() * 1000, y: -100},
+                {x: Math.random() * 1000, y: 1100},
+                {x: -100, y: Math.random() * 1000},
+                {x: 1100, y: Math.random() * 1000}
+            ];
+            const spawnPoint = edges[Math.floor(Math.random() * edges.length)];
+            
+            const z = 2000;
+            
+            enemiesGroup.appendChild(enemy);
+            enemies.push({
+                element: enemy,
+                x: spawnPoint.x,
+                y: spawnPoint.y,
+                z: z,
+                lights: [],
+                smoke: smoke,
+                smokeParticles: [],
+                health: 100
+            });
+        }
+
+        function createLaser() {
+            const laser = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            laser.setAttribute("stroke", "lime");
+            laser.setAttribute("stroke-width", "2");
+            lasersGroup.appendChild(laser);
+            
+            lasers.push({
+                element: laser,
+                x: playerX,
+                y: playerY,
+                angle: laserAngle
+            });
+        }
+
+        function createExplosion(x, y, scale, size) {
+            const explosion = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", x);
+            circle.setAttribute("cy", y);
+            circle.setAttribute("r", size * scale);
+            circle.setAttribute("fill", "url(#explosionGradient)");
+            circle.setAttribute("filter", "url(#explosionBlur)");
+            explosion.appendChild(circle);
+
+            for (let i = 0; i < 20; i++) {
+                const smoke = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                smoke.setAttribute("cx", x);
+                smoke.setAttribute("cy", y);
+                smoke.setAttribute("r", (Math.random() * 5 + 2) * scale);
+                smoke.setAttribute("fill", "rgba(100, 100, 100, 0.5)");
+                smoke.setAttribute("filter", "url(#explosionBlur)");
+                explosion.appendChild(smoke);
+            }
+
+            for (let i = 0; i < 30; i++) {
+                const sparkle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                sparkle.setAttribute("cx", x);
+                sparkle.setAttribute("cy", y);
+                sparkle.setAttribute("r", Math.random() * 2 * scale);
+                sparkle.setAttribute("fill", "white");
+                explosion.appendChild(sparkle);
+            }
+
+            explosionsGroup.appendChild(explosion);
+            explosions.push({
+                element: explosion,
+                x: x,
+                y: y,
+                scale: scale,
+                size: size,
+                time: 0,
+                particles: Array.from(explosion.children)
+            });
+        }
+
+        function updateGame() {
+            // Update enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                enemy.z -= 5; // Simplified movement speed
+
+                const dx = playerX - enemy.x;
+                const dy = playerY - enemy.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                const speed = 2;
+
+                enemy.x += (dx / distance) * speed;
+                enemy.y += (dy / distance) * speed;
+
+                enemy.x = Math.max(0, Math.min(1000, enemy.x));
+                enemy.y = Math.max(0, Math.min(1000, enemy.y));
+
+                if (enemy.z <= 0) {
+                    enemiesGroup.removeChild(enemy.element);
+                    enemies.splice(i, 1);
+                    continue;
+                }
+                
+                const scale = 500 / enemy.z;
+                const x = enemy.x;
+                const y = enemy.y;
+                
+                const angle = Math.atan2(dy, dx);
+                
+                const size = 30 * scale;
+                const points = [
+                    [x + Math.cos(angle) * size, y + Math.sin(angle) * size],
+                    [x - Math.cos(angle + 0.5) * size, y - Math.sin(angle + 0.5) * size],
+                    [x - Math.cos(angle - 0.5) * size, y - Math.sin(angle - 0.5) * size]
+                ];
+                
+                enemy.element.firstChild.setAttribute('d', `M${points[0][0]},${points[0][1]} L${points[1][0]},${points[1][1]} L${points[2][0]},${points[2][1]} Z`);
+
+                for (let j = 0; j < 2; j++) {
+                    const light = enemy.element.children[j + 1];
+                    const lightAngle = angle + Math.PI + (j === 0 ? 0.2 : -0.2);
+                    const lightX = x - Math.cos(angle) * size * 0.8;
+                    const lightY = y - Math.sin(angle) * size * 0.8;
+                    light.setAttribute('cx', lightX + Math.cos(lightAngle) * size * 0.3);
+                    light.setAttribute('cy', lightY + Math.sin(lightAngle) * size * 0.3);
+                    light.setAttribute('r', 2 * scale);
+                    light.style.opacity = Math.random() > 0.5 ? 1 : 0.2;
+                }
+
+                const smokeLength = 60 * scale;
+                const smokeWidth = 20 * scale;
+                const time = Date.now() / 1000;
+                const smokePath = `M${x - Math.cos(angle) * size},${y - Math.sin(angle) * size} `;
+                const smokePoints = [];
+                for (let j = 0; j <= 10; j++) {
+                    const t = j / 10;
+                    const offsetX = Math.sin(t * Math.PI * 2 + time * 5) * smokeWidth * (1 - t) * 0.3;
+                    const offsetY = Math.cos(t * Math.PI * 2 + time * 5) * smokeWidth * (1 - t) * 0.3;
+                    smokePoints.push(`${x - Math.cos(angle) * smokeLength * t + offsetX},${y - Math.sin(angle) * smokeLength * t + offsetY}`);
+                }
+                enemy.smoke.setAttribute('d', smokePath + smokePoints.join(' '));
+            }
+
+            if (isFiring) {
+                createLaser();
+            }
+
+            for (let i = lasers.length - 1; i >= 0; i--) {
+                const laser = lasers[i];
+                laser.x += Math.cos(laser.angle) * 10;
+                laser.y += Math.sin(laser.angle) * 10;
+
+                laser.element.setAttribute('x1', laser.x);
+                laser.element.setAttribute('y1', laser.y);
+                laser.element.setAttribute('x2', laser.x + Math.cos(laser.angle) * 20);
+                laser.element.setAttribute('y2', laser.y + Math.sin(laser.angle) * 20);
+
+                if (laser.x < 0 || laser.x > 1000 || laser.y < 0 || laser.y > 1000) {
+                    lasersGroup.removeChild(laser.element);
+                    lasers.splice(i, 1);
+                    continue;
+                }
+
+                // Collision detection with enemies
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const enemy = enemies[j];
+                    const dx = laser.x - enemy.x;
+                    const dy = laser.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const enemyScale = 500 / enemy.z;
+                    const enemySize = 30 * enemyScale;
+
+                    if (distance < enemySize) {
+                        enemy.health -= 25; // Reduce enemy health
+                        if (enemy.health <= 0) {
+                            enemiesGroup.removeChild(enemy.element);
+                            enemies.splice(j, 1);
+                            createExplosion(enemy.x, enemy.y, enemyScale, 60);
+                        } else {
+                            // Visual effect for enemy damage
+                            enemy.element.firstChild.style.filter = `brightness(${150 - enemy.health}%)`;
+                        }
+                        lasersGroup.removeChild(laser.element);
+                        lasers.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+
+            // Update explosions
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                const explosion = explosions[i];
+                explosion.time += 1;
+                
+                if (explosion.time > 30) {
+                    explosionsGroup.removeChild(explosion.element);
+                    explosions.splice(i, 1);
+                } else {
+                    const progress = explosion.time / 30;
+                    const opacity = 1 - progress;
+                    const scale = explosion.scale * (1 + progress * 0.5);
+                    
+                    explosion.particles.forEach((particle, index) => {
+                        if (index === 0) {
+                            // Main explosion circle
+                            particle.setAttribute('r', explosion.size * scale);
+                            particle.style.opacity = opacity;
+                        } else if (index < 21) {
+                            // Smoke particles
+                            const angle = (index / 20) * Math.PI * 2;
+                            const distance = progress * 30 * explosion.scale;
+                            const x = explosion.x + Math.cos(angle) * distance;
+                            const y = explosion.y + Math.sin(angle) * distance;
+                            
+                            particle.setAttribute('cx', x);
+                            particle.setAttribute('cy', y);
+                            particle.setAttribute('r', (particle.getAttribute('r') * scale) / explosion.scale);
+                            particle.style.opacity = opacity * 0.7;
+                        } else {
+                            // Sparkles
+                            const angle = Math.random() * Math.PI * 2;
+                            const distance = progress * 50 * explosion.scale;
+                            const x = explosion.x + Math.cos(angle) * distance;
+                            const y = explosion.y + Math.sin(angle) * distance;
+                            
+                            particle.setAttribute('cx', x);
+                            particle.setAttribute('cy', y);
+                            particle.setAttribute('r', (particle.getAttribute('r') * scale) / explosion.scale);
+                            particle.style.opacity = opacity * (1 - progress);
+                        }
+                    });
+                }
+            }
+
+            if (Math.random() < 0.01 && enemies.length < 3) {
+                createEnemy();
+            }
+
+            requestAnimationFrame(updateGame);
+        }
+
+        // Laser aiming and firing
+        let isDragging = false;
+
+        laserBtn.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            isFiring = true;
+            updateLaserAngle(e);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                updateLaserAngle(e);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            isFiring = false;
+            // Reset laser button position to center
+            laserBtn.style.left = '50%';
+            laserBtn.style.top = '50%';
+            laserBtn.style.transform = 'translate(-50%, -50%)';
+        });
+
+        function updateLaserAngle(e) {
+            const rect = laserContainer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const dx = e.clientX - centerX;
+            const dy = e.clientY - centerY;
+            laserAngle = Math.atan2(dy, dx);
+
+            // Update laser button position
+            const buttonRadius = laserContainer.offsetWidth / 2 - laserBtn.offsetWidth / 2;
+            const distance = Math.min(Math.sqrt(dx * dx + dy * dy), buttonRadius);
+            const buttonX = Math.cos(laserAngle) * distance + buttonRadius;
+            const buttonY = Math.sin(laserAngle) * distance + buttonRadius;
+            laserBtn.style.left = `${buttonX}px`;
+            laserBtn.style.top = `${buttonY}px`;
+            laserBtn.style.transform = 'translate(-50%, -50%)';
+        }
+
+        // Add event listener for window resize
+        window.addEventListener('resize', () => {
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            gameArea.setAttribute('viewBox', `0 0 ${gameAreaRect.width} ${gameAreaRect.height}`);
+        });
+
+        // Start the game
+        updateGame();
+    </script>
+</body>
+</html>
