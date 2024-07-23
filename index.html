@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Game</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #333;
+            font-family: Arial, sans-serif;
+        }
+        
+        #gameArea {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #000;
+        }
+        
+        #gameArea svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #gameArea svg .star {
+            fill: #fff;
+        }
+        
+        #gameArea svg .planet {
+            fill: #66d9ef;
+        }
+        
+        #gameArea svg .asteroid {
+            fill: #fff;
+        }
+        
+        #gameArea svg .enemy {
+            fill: #f00;
+        }
+        
+        #gameArea svg .laser {
+            stroke: #0f0;
+            stroke-width: 2;
+        }
+        
+        #gameArea svg .explosion {
+            fill: #ff0;
+        }
+        
+        #gameArea svg .smoke {
+            fill: #fff;
+        }
+        
+        #gameArea svg .sparkle {
+            fill: #fff;
+        }
+        
+        #scoreDisplay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-size: 24px;
+        }
+        
+        #healthDisplay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #fff;
+            font-size: 24px;
+        }
+        
+        #gameOverDisplay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 48px;
+            text-align: center;
+            display: none;
+        }
+        
+        #resetBtn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        #resetBtn:hover {
+            background-color: #3e8e41;
+        }
+        
+        #stealthBtn {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        #stealthBtn:hover {
+            background-color: #3e8e41;
+        }
+        
+        #fullscreenBtn {
+            position: absolute;
+            top: 10px;
+            right: 50%;
+            transform: translateX(50%);
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        #fullscreenBtn:hover {
+            background-color: #3e8e41;
+        }
+        
+        #speedSlider {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            width: 200px;
+        }
+        
+        #speedSlider input[type="range"] {
+            width: 100%;
+            height: 20px;
+            border-radius: 10px;
+            background-color: #ccc;
+            cursor: pointer;
+        }
+        
+        #speedSlider input[type="range"]::-webkit-slider-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            cursor: pointer;
+        }
+        
+        #speedSlider input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            cursor: pointer;
+        }
+        
+        #speedSlider input[type="range"]::-ms-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            cursor: pointer;
+        }
+        
+        #speedSlider label {
+            position: absolute;
+            bottom: 30px;
+            left: 10px;
+            color: #fff;
+        }
+        
+        #laserContainer {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: #ccc;
+            cursor: pointer;
+        }
+        
+        #laserBtn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            cursor: pointer;
+        }
+        
+        #laserBtn:hover {
+            background-color: #3e8e41;
+        }
+        
+        #leftBtn, #rightBtn, #upBtn, #downBtn {
+            position: absolute;
+            bottom: 10px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            cursor: pointer;
+        }
+        
+        #leftBtn:hover, #rightBtn:hover, #upBtn:hover, #downBtn:hover {
+            background-color: #3e8e41;
+        }
+        
+        #leftBtn {
+            left: 10px;
+        }
+        
+        #rightBtn {
+            right: 10px;
+        }
+        
+        #upBtn {
+            left: 50%;
+            transform: translateX(-50%);
+            top: 10px;
+        }
+        
+        #downBtn {
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 70px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameArea">
+        <svg id="gameSVG" width="100%" height="100%">
+            <defs>
+                <linearGradient id="starGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#fff" stop-opacity="1" />
+                    <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+                </linearGradient>
+                <linearGradient id="planetGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#66d9ef" stop-opacity="1" />
+                    <stop offset="100%" stop-color="#66d9ef" stop-opacity="0" />
+                </linearGradient>
+                <linearGradient id="asteroidGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#fff" stop-opacity="1" />
+                    <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+                </linearGradient>
+                <linearGradient id="enemyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#f00" stop-opacity="1" />
+                    <stop offset="100%" stop-color="#f00" stop-opacity="0" />
+                </linearGradient>
+                <linearGradient id="laserGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#0f0" stop-opacity="1" />
+                    <stop offset="100%" stop-color="#0f0" stop-opacity="0" />
+                </linearGradient>
+                <linearGradient id="explosionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ff0" stop-opacity="1" />
+                    <stop offset="100%" stop-color="#ff0" stop-opacity="0" />
+                </linearGradient>
+                <linearGradient id="smokeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#fff" stop-opacity="1" />
+                    <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+                </linearGradient>
+                <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#fff" stop-opacity="1" />
+                    <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+                </linearGradient>
+            </defs>
+            <g id="starsGroup"></g>
+            <g id="gameObjectsGroup"></g>
+            <g id="enemiesGroup"></g>
+            <g id="lasersGroup"></g>
+            <g id="explosionsGroup"></g>
+            <g id="playerGroup">
+                <circle id="playerUFO" cx="500" cy="800" r="50" fill="#4CAF50" />
+                <g id="ufoLights">
+                    <circle cx="500" cy="750" r="10" fill="#fff" />
+                    <circle cx="500" cy="850" r="10" fill="#fff" />
+                </g>
+            </g>
+        </svg>
+        <div id="scoreDisplay">Score: 0</div>
+        <div id="healthDisplay">Health: 100</div>
+        <div id="gameOverDisplay">Game Over!</div>
+        <button id="resetBtn">Reset</button>
+        <button id="stealthBtn">Stealth Mode</button>
+        <button id="fullscreenBtn">Fullscreen</button>
+        <div id="speedSlider">
+            <input type="range" id="speedRange" min="1" max="10" value="5" />
+            <label for="speedRange">Speed: 5</label>
+        </div>
+        <div id="laserContainer">
+            <button id="laserBtn"></button>
+        </div>
+        <button id="leftBtn"></button>
+        <button id="rightBtn"></button>
+        <button id="upBtn"></button>
+        <button id="downBtn"></button>
+    </div>
+
+    <script>
+        // Get elements
+        const gameArea = document.getElementById('gameArea');
+        const gameSVG = document.getElementById('gameSVG');
+        const starsGroup = document.getElementById('starsGroup');
+        const gameObjectsGroup = document.getElementById('gameObjectsGroup');
+        const enemiesGroup = document.getElementById('enemiesGroup');
+        const lasersGroup = document.getElementById('lasersGroup');
+        const explosionsGroup = document.getElementById('explosionsGroup');
+        const playerGroup = document.getElementById('playerGroup');
+        const playerUFO = document.getElementById('playerUFO');
+        const ufoLights = document.getElementById('ufoLights');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const healthDisplay = document.getElementById('healthDisplay');
+        const gameOverDisplay = document.getElementById('gameOverDisplay');
+        const resetBtn = document.getElementById('resetBtn');
+        const stealthBtn = document.getElementById('stealthBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedRange = document.getElementById('speedRange');
+        const laserContainer = document.getElementById('laserContainer');
+        const laserBtn = document.getElementById('laserBtn');
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+        const upBtn = document.getElementById('upBtn');
+        const downBtn = document.getElementById('downBtn');
+
+        // Game variables
+        let gameActive = true;
+        let score = 0;
+        let ufoHealth = 100;
+        let playerX = 500;
+        let playerY = 800;
+        let playerSpeed = 5;
+        let laserAngle = 0;
+        let isFiring = false;
+        let isStealthMode = false;
+        let stars = [];
+        let gameObjects = [];
+        let enemies = [];
+        let lasers = [];
+        let explosions = [];
+
+        // Function to create a star
+        function createStar() {
+            const star = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            star.setAttribute('cx', Math.random() * 1000);
+            star.setAttribute('cy', Math.random() * 1000);
+            star.setAttribute('r', Math.random() * 2 + 1);
+            star.setAttribute('fill', '#fff');
+            starsGroup.appendChild(star);
+            return star;
+        }
+
+        // Function to create a game object (planet or asteroid)
+        function createGameObject(type) {
+            const obj = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            obj.setAttribute('cx', Math.random() * 1000);
+            obj.setAttribute('cy', Math.random() * 1000);
+            obj.setAttribute('r', type === 'planet' ? 40 : 20);
+            obj.setAttribute('fill', type === 'planet' ? '#66d9ef' : '#fff');
+            gameObjectsGroup.appendChild(obj);
+            gameObjects.push({ element: obj, type: type, x: parseFloat(obj.getAttribute('cx')), y: parseFloat(obj.getAttribute('cy')), z: Math.random() * 1000 });
+        }
+
+        // Function to create an enemy
+        function createEnemy() {
+            const enemy = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            enemy.setAttribute('cx', Math.random() * 1000);
+            enemy.setAttribute('cy', Math.random() * 1000);
+            enemy.setAttribute('r', 30);
+            enemy.setAttribute('fill', '#f00');
+            enemiesGroup.appendChild(enemy);
+            enemies.push({ element: enemy, x: parseFloat(enemy.getAttribute('cx')), y: parseFloat(enemy.getAttribute('cy')), z: Math.random() * 1000, health: 100 });
+        }
+
+        // Function to create a laser
+        function createLaser() {
+            const laser = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            laser.setAttribute('x1', playerX);
+            laser.setAttribute('y1', playerY);
+            laser.setAttribute('x2', playerX + Math.cos(laserAngle) * 100);
+            laser.setAttribute('y2', playerY + Math.sin(laserAngle) * 100);
+            laser.setAttribute('stroke', '#0f0');
+            laser.setAttribute('stroke-width', '2');
+            lasersGroup.appendChild(laser);
+            lasers.push({ element: laser, x: playerX, y: playerY, angle: laserAngle });
+        }
+
+        // Function to create an explosion
+        function createExplosion(x, y, scale, size) {
+            const explosion = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            explosion.setAttribute('transform', `translate(${x}, ${y}) scale(${scale})`);
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', 0);
+            circle.setAttribute('cy', 0);
+            circle.setAttribute('r', size);
+            circle.setAttribute('fill', '#ff0');
+            explosion.appendChild(circle);
+            const smoke = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            smoke.setAttribute('cx', 0);
+            smoke.setAttribute('cy', 0);
+            smoke.setAttribute('r', size * 2);
+            smoke.setAttribute('fill', '#fff');
+            smoke.setAttribute('opacity', 0.5);
+            explosion.appendChild(smoke);
+            const sparkle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            sparkle.setAttribute('cx', 0);
+            sparkle.setAttribute('cy', 0);
+            sparkle.setAttribute('r', size / 2);
+            sparkle.setAttribute('fill', '#fff');
+            sparkle.setAttribute('opacity', 0.5);
+            explosion.appendChild(sparkle);
+            explosionsGroup.appendChild(explosion);
+            explosions.push({ element: explosion, x: x, y: y, scale: scale, size: size, time: 0, particles: [circle, smoke, sparkle] });
+        }
+
+        // Function to move the UFO
+        function moveUFO(dx, dy) {
+            playerX += dx;
+            playerY += dy;
+            playerUFO.setAttribute('transform', `translate(${playerX}, ${playerY})`);
+        }
+
+        // Function to update the game
+        function updateGame() {
+            // Update stars
+            for (let i = stars.length - 1; i >= 0; i--) {
+                const star = stars[i];
+                const x = parseFloat(star.getAttribute('cx')) + Math.random() * 2 - 1;
+                const y = parseFloat(star.getAttribute('cy')) + Math.random() * 2 - 1;
+                star.setAttribute('cx', x);
+                star.setAttribute('cy', y);
+                if (x < 0 || x > 1000 || y < 0 || y > 1000) {
+                    starsGroup.removeChild(star);
+                    stars.splice(i, 1);
+                }
+            }
+
+            // Update game objects
+            for (let i = gameObjects.length - 1; i >= 0; i--) {
+                const obj = gameObjects[i];
+                obj.x += Math.random() * 2 - 1;
+                obj.y += Math.random() * 2 - 1;
+                obj.element.setAttribute('cx', obj.x);
+                obj.element.setAttribute('cy', obj.y);
+                if (obj.x < 0 || obj.x > 1000 || obj.y < 0 || obj.y > 1000) {
+                    gameObjectsGroup.removeChild(obj.element);
+                    gameObjects.splice(i, 1);
+                }
+            }
+
+            // Update enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                enemy.x += Math.random() * 2 - 1;
+                enemy.y += Math.random() * 2 - 1;
+                enemy.element.setAttribute('cx', enemy.x);
+                enemy.element.setAttribute('cy', enemy.y);
+                if (enemy.x < 0 || enemy.x > 1000 || enemy.y < 0 || enemy.y > 1000) {
+                    enemiesGroup.removeChild(enemy.element);
+                    enemies.splice(i, 1);
+                }
+            }
+
+            // Update lasers
+            for (let i = lasers.length - 1; i >= 0; i--) {
+                const laser = lasers[i];
+                laser.x += Math.cos(laser.angle) * 10;
+                laser.y += Math.sin(laser.angle) * 10;
+                laser.element.setAttribute('x1', laser.x);
+                laser.element.setAttribute('y1', laser.y);
+                laser.element.setAttribute('x2', laser.x + Math.cos(laser.angle) * 100);
+                laser.element.setAttribute('y2', laser.y + Math.sin(laser.angle) * 100);
+                if (laser.x < 0 || laser.x > 1000 || laser.y < 0 || laser.y > 1000) {
+                    lasersGroup.removeChild(laser.element);
+                    lasers.splice(i, 1);
+                }
+
+                // Check collision with enemies
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const enemy = enemies[j];
+                    const dx = laser.x - enemy.x;
+                    const dy = laser.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 30) { // Adjust the collision radius as needed
+                        enemy.health -= 25; // Reduce enemy health
+                        if (enemy.health <= 0) {
+                            score += 20;
+                            enemiesGroup.removeChild(enemy.element);
+                            enemies.splice(j, 1);
+                            createExplosion(enemy.x, enemy.y, 500 / enemy.z, 60); // Explosion size is twice the enemy size (30 * 2)
+                        }
+                        lasersGroup.removeChild(laser.element);
+                        lasers.splice(i, 1);
+                        break;
+                    }
+                }
+
+                // Check collision with planets and asteroids
+                for (let j = gameObjects.length - 1; j >= 0; j--) {
+                    const obj = gameObjects[j];
+                    const scale = 500 / obj.z;
+                    const x = obj.x * scale + 500;
+                    const y = obj.y * scale + 500;
+                    const dx = laser.x - x;
+                    const dy = laser.y - y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const collisionRadius = (obj.type === 'planet' ? 40 : 20) * scale; 
+                    if (distance < collisionRadius) {
+                        if (obj.type === 'planet') {
+                            score -= 30; // Penalty for destroying a planet
+                        } else {
+                            score += 5; // Small reward for destroying an asteroid
+                        }
+                        gameObjectsGroup.removeChild(obj.element);
+                        gameObjects.splice(j, 1);
+                        lasersGroup.removeChild(laser.element);
+                        lasers.splice(i, 1);
+                        createExplosion(x, y, scale, obj.type === 'planet' ? 80 : 40); // Explosion size is twice the object size
+                        createGameObject(obj.type);
+                        break;
+                    }
+                }
+            }
+
+            // Update explosions
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                const explosion = explosions[i];
+                explosion.time += 1;
+                
+                if (explosion.time > 30) {
+                    explosionsGroup.removeChild(explosion.element);
+                    explosions.splice(i, 1);
+                } else {
+                    const scale = explosion.scale * (1 - explosion.time / 30);
+                    explosion.element.setAttribute('transform', `translate(${explosion.x}, ${explosion.y}) scale(${scale})`);
+                    for (const particle of explosion.particles) {
+                        particle.setAttribute('opacity', 1 - explosion.time / 30);
+                    }
+                }
+            }
+
+            // Update score and health displays
+            scoreDisplay.textContent = `Score: ${score}`;
+            healthDisplay.textContent = `Health: ${ufoHealth}`;
+
+            // Check for game over
+            if (ufoHealth <= 0) {
+                gameOverDisplay.style.display = 'block';
+                gameActive = false;
+            }
+        }
+
+        // Function to handle key presses
+        function handleKeyPress(event) {
+            if (event.key === 'ArrowUp') {
+                moveUFO(0, -playerSpeed);
+            } else if (event.key === 'ArrowDown') {
+                moveUFO(0, playerSpeed);
+            } else if (event.key === 'ArrowLeft') {
+                moveUFO(-playerSpeed, 0);
+            } else if (event.key === 'ArrowRight') {
+                moveUFO(playerSpeed, 0);
+            } else if (event.key === ' ') {
+                if (!isFiring) {
+                    createLaser();
+                    isFiring = true;
+                    setTimeout(() => {
+                        isFiring = false;
+                    }, 200);
+                }
+            }
+        }
+
+        // Function to handle mouse movements
+        function handleMouseMove(event) {
+            const rect = gameArea.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            const dx = x - playerX;
+            const dy = y - playerY;
+            laserAngle = Math.atan2(dy, dx);
+            ufoLights.setAttribute('transform', `translate(${playerX}, ${playerY}) rotate(${laserAngle * 180 / Math.PI})`);
+        }
+
+        // Initialize game
+        for (let i = 0; i < 100; i++) {
+            createStar();
+        }
+        for (let i = 0; i < 10; i++) {
+            createGameObject('planet');
+            createGameObject('asteroid');
+        }
+        for (let i = 0; i < 5; i++) {
+            createEnemy();
+        }
+        gameSVG.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('keydown', handleKeyPress);
+        resetBtn.addEventListener('click', () => {
+            gameActive = true;
+            score = 0;
+            ufoHealth = 100;
+            playerX = 500;
+            playerY = 800;
+            playerSpeed = 5;
+            laserAngle = 0;
+            isFiring = false;
+            stars = [];
+            gameObjects = [];
+            enemies = [];
+            lasers = [];
+            explosions = [];
+            gameOverDisplay.style.display = 'none';
+            for (let i = 0; i < 100; i++) {
+                createStar();
+            }
+            for (let i = 0; i < 10; i++) {
+                createGameObject('planet');
+                createGameObject('asteroid');
+            }
+            for (let i = 0; i < 5; i++) {
+                createEnemy();
+            }
+        });
+        stealthBtn.addEventListener('click', () => {
+            isStealthMode = !isStealthMode;
+            if (isStealthMode) {
+                playerUFO.setAttribute('fill', '#333');
+            } else {
+                playerUFO.setAttribute('fill', '#4CAF50');
+            }
+        });
+        fullscreenBtn.addEventListener('click', () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                gameArea.requestFullscreen();
+            }
+        });
+        speedRange.addEventListener('input', () => {
+            playerSpeed = parseInt(speedRange.value);
+            speedSlider.querySelector('label').textContent = `Speed: ${playerSpeed}`;
+        });
+
+        // Main game loop
+        setInterval(() => {
+            if (gameActive) {
+                updateGame();
+            }
+        }, 16);
+    </script>
+</body>
+</html>
