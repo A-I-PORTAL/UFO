@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced UFO Mini Game</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #gameArea {
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+        #gameContainer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-gap: 10px;
+        }
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            border: none;
+            background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        }
+        .control-btn:active {
+            background: linear-gradient(to top, #4a4a4a, #2a2a2a);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        #laserContainer {
+            grid-column: 2;
+            grid-row: 2;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        #laserBtn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(to bottom, #ff6b6b, #ff0000);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        #upBtn { grid-column: 2; grid-row: 1; }
+        #leftBtn { grid-column: 1; grid-row: 2; }
+        #rightBtn { grid-column: 3; grid-row: 2; }
+        #downBtn { grid-column: 2; grid-row: 3; }
+        #sliderContainer {
+            grid-column: 3;
+            grid-row: 1;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
+            border-radius: 50%;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        }
+        #speedSlider {
+            -webkit-appearance: none;
+            width: 60px;
+            height: 60px;
+            background: transparent;
+            outline: none;
+            border-radius: 50%;
+            transform: rotate(-90deg);
+        }
+        #speedSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(to bottom, #6CAF70, #4CAF50);
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        #speedSlider::-moz-range-thumb {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(to bottom, #6CAF70, #4CAF50);
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        #stealthContainer {
+            grid-column: 1;
+            grid-row: 1;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        #stealthBtn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(to bottom, #4a89dc, #2a69bc);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .game-btn {
+            position: absolute;
+            bottom: 20px;
+            width: 80px;
+            height: 40px;
+            font-size: 16px;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        }
+        #resetBtn {
+            left: 20px;
+            background: linear-gradient(to bottom, #f0ad4e, #d08b2c);
+        }
+        #fullscreenBtn {
+            right: 20px;
+            background: linear-gradient(to bottom, #5bc0de, #3b9cbd);
+        }
+        .status-display {
+            position: absolute;
+            top: 10px;
+            width: 120px;
+            height: 40px;
+            background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
+            color: white;
+            font-size: 18px;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 20px;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        }
+        #score { left: 10px; }
+        #health { right: 10px; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <svg id="gameArea" viewBox="0 0 1000 1000">
+            <defs>
+                <radialGradient id="asteroidGradient">
+                    <stop offset="0%" stop-color="#A0A0A0" />
+                    <stop offset="50%" stop-color="#808080" />
+                    <stop offset="100%" stop-color="#606060" />
+                </radialGradient>
+                <radialGradient id="earthGradient">
+                    <stop offset="0%" stop-color="#4b66ad" />
+                    <stop offset="60%" stop-color="#84b6d9" />
+                    <stop offset="100%" stop-color="#b7d9e8" />
+                </radialGradient>
+                <radialGradient id="jupiterGradient">
+                    <stop offset="0%" stop-color="#b76e2e" />
+                    <stop offset="33%" stop-color="#e3b168" />
+                    <stop offset="66%" stop-color="#f0d082" />
+                    <stop offset="100%" stop-color="#f4e4b5" />
+                </radialGradient>
+                <radialGradient id="marsGradient">
+                    <stop offset="0%" stop-color="#8c3b1a" />
+                    <stop offset="50%" stop-color="#b9522b" />
+                    <stop offset="100%" stop-color="#e37547" />
+                </radialGradient>
+                <radialGradient id="moonGradient">
+                    <stop offset="0%" stop-color="#d0d0d0" />
+                    <stop offset="50%" stop-color="#a0a0a0" />
+                    <stop offset="100%" stop-color="#808080" />
+                </radialGradient>
+                <filter id="fuzzyEdge">
+                    <feGaussianBlur stdDeviation="3" />
+                </filter>
+                <linearGradient id="enemyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#FF0000" />
+                    <stop offset="50%" stop-color="#800000" />
+                    <stop offset="100%" stop-color="#400000" />
+                </linearGradient>
+                <filter id="smokeBlur">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
+                </filter>
+                <radialGradient id="ufoBodyGradient">
+                    <stop offset="0%" stop-color="#e0e0e0" />
+                    <stop offset="70%" stop-color="#a0a0a0" />
+                    <stop offset="100%" stop-color="#808080" />
+                </radialGradient>
+                <radialGradient id="ufoDomeGradient">
+                    <stop offset="0%" stop-color="#c0c0c0" />
+                    <stop offset="70%" stop-color="#909090" />
+                    <stop offset="100%" stop-color="#707070" />
+                </radialGradient>
+                <radialGradient id="explosionGradient">
+                    <stop offset="0%" stop-color="#FFFF00" />
+                    <stop offset="25%" stop-color="#FF8C00" />
+                    <stop offset="50%" stop-color="#FF4500" />
+                    <stop offset="75%" stop-color="#8B0000" />
+                    <stop offset="100%" stop-color="rgba(0,0,0,0)" />
+                </radialGradient>
+                <filter id="explosionBlur">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="10" />
+                </filter>
+            </defs>
+            <g id="stars"></g>
+            <g id="gameObjects"></g>
+            <g id="enemies"></g>
+            <g id="lasers"></g>
+            <g id="explosions"></g>
+            <g id="playerUFO" transform="translate(500,800)">
+                <ellipse cx="0" cy="0" rx="40" ry="12.5" fill="url(#ufoBodyGradient)"/>
+                <ellipse cx="0" cy="-2.5" rx="30" ry="10" fill="url(#ufoDomeGradient)"/>
+                <path d="M-40,0 A40,12.5 0 0,0 40,0" fill="none" stroke="aqua" stroke-width="2" opacity="0.8"/>
+            </g>
+        </svg>
+
+        <div id="controls">
+            <div id="stealthContainer">
+                <button id="stealthBtn"></button>
+            </div>
+            <button class="control-btn" id="upBtn">↑</button>
+            <div id="sliderContainer">
+                <input type="range" id="speedSlider" min="0" max="100" value="50" step="1">
+            </div>
+            <button class="control-btn" id="leftBtn">←</button>
+            <div id="laserContainer">
+                <button id="laserBtn"></button>
+            </div>
+            <button class="control-btn" id="rightBtn">→</button>
+            <button class="control-btn" id="downBtn">↓</button>
+        </div>
+
+        <button id="resetBtn" class="game-btn">RESET</button>
+        <button id="fullscreenBtn" class="game-btn">EXPAND</button>
+
+        <div id="score" class="status-display">SCORE 0</div>
+        <div id="health" class="status-display">HEALTH 100</div>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const gameContainer = document.getElementById('gameContainer');
+        const starsGroup = document.getElementById('stars');
+        const gameObjectsGroup = document.getElementById('gameObjects');
+        const enemiesGroup = document.getElementById('enemies');
+        const lasersGroup = document.getElementById('lasers');
+        const explosionsGroup = document.getElementById('explosions');
+        const laserBtn = document.getElementById('laserBtn');
+        const laserContainer = document.getElementById('laserContainer');
+        const playerUFO = document.getElementById('playerUFO');
+        const speedSlider = document.getElementById('speedSlider');
+        const stealthBtn = document.getElementById('stealthBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const scoreDisplay = document.getElementById('score');
+        const healthDisplay = document.getElementById('health');
+
+        const enemies = [];
+        const lasers = [];
+        const explosions = [];
+        const stars = [];
+        const gameObjects = [];
+        const planetTypes = ['earth', 'jupiter', 'mars'];
+
+        let playerX = 500;
+        let playerY = 800;
+        let laserAngle = 0;
+        let isFiring = false;
+        let isStealthMode = false;
+        let score = 0;
+        let health = 100;
+
+        const ENEMY_SPEED = 2;
+        const STAR_MIN_SPEED = 0.5;
+        const STAR_MAX_SPEED = 25;
+        let starSpeed = STAR_MIN_SPEED;
+
+        const UFO_MIN_SPEED = 1;
+        const UFO_MAX_SPEED = 10;
+        const UFO_ACCELERATION = 0.2;
+        let ufoCurrentSpeed = { x: 0, y: 0 };
+        let ufoTargetSpeed = { x: 0, y: 0 };
+
+        function createStar() {
+            const star = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            star.setAttribute("r", Math.random() * 1.5 + 0.5);
+            star.setAttribute("fill", "white");
+            starsGroup.appendChild(star);
+            return {
+                element: star,
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                z: Math.random() * 1000
+            };
+        }
+
+        function createGameObject(type) {
+            const obj = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            const x = Math.random() * 2000 - 1000;
+            const y = Math.random() * 2000 - 1000;
+            const z = Math.random() * 1000;
+            
+            if (type === 'planet') {
+                const planetType = planetTypes[Math.floor(Math.random() * planetTypes.length)];
+                const planet = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                planet.setAttribute("r", 1);  // Start with a small radius
+                planet.setAttribute("fill", `url(#${planetType}Gradient)`);
+                planet.setAttribute("opacity", "0");  // Start fully transparent
+                obj.appendChild(planet);
+                
+                // Add glow effect
+                const glow = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                glow.setAttribute("r", 1);  // Start with a small radius
+                glow.setAttribute("fill", "none");
+                glow.setAttribute("stroke", "aqua");
+                glow.setAttribute("stroke-width", "2");
+                glow.setAttribute("opacity", "0");  // Start fully transparent
+                obj.appendChild(glow);
+
+                // Add moons
+                const moonCount = Math.floor(Math.random() * 4);  // 0 to 3 moons
+                const moons = [];
+                for (let i = 0; i < moonCount; i++) {
+                    const moon = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    moon.setAttribute("r", 1);  // Start with a small radius
+                    moon.setAttribute("fill", "url(#moonGradient)");
+                    moon.setAttribute("opacity", "0");  // Start fully transparent
+                    obj.appendChild(moon);
+                    moons.push({
+                        element: moon,
+                        angle: Math.random() * Math.PI * 2,
+                        distance: Math.random() * 0.5 + 1.2,  // Between 1.2 and 1.7 times planet radius
+                        speed: (Math.random() * 0.02 + 0.01) * (Math.random() < 0.5 ? 1 : -1),  // Positive or negative for different directions
+                        size: Math.random() * 0.08 + 0.02  // Between 2% and 10% of planet size
+                    });
+                }
+
+                gameObjects.push({
+                    element: obj,
+                    x: x,
+                    y: y,
+                    z: z,
+                    type: type,
+                    growthProgress: 0,
+                    visited: false,
+                    moons: moons
+                });
+            } else {
+                const asteroid = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                asteroid.setAttribute("r", 20);
+                asteroid.setAttribute("fill", "url(#asteroidGradient)");
+                asteroid.setAttribute("filter", "url(#fuzzyEdge)");
+                obj.appendChild(asteroid);
+
+                const tail = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                tail.setAttribute("fill", "url(#asteroidGradient)");
+                tail.setAttribute("filter", "url(#fuzzyEdge)");
+                obj.appendChild(tail);
+
+                for (let i = 0; i < 10; i++) {
+                    const sparkle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    sparkle.setAttribute("r", Math.random() * 2 + 1);
+                    sparkle.setAttribute("fill", "white");
+                    sparkle.style.opacity = Math.random() * 0.7 + 0.3;
+                    obj.appendChild(sparkle);
+                }
+
+                gameObjects.push({
+                    element: obj,
+                    x: x,
+                    y: y,
+                    z: z,
+                    type: type
+                });
+            }
+            
+            gameObjectsGroup.appendChild(obj);
+        }
+
+        function createEnemy() {
+            if (enemies.length >= 3) return;
+
+            const enemy = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            const body = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            body.setAttribute("fill", "url(#enemyGradient)");
+            body.setAttribute("stroke", "#808080");
+            body.setAttribute("stroke-width", "2");
+            enemy.appendChild(body);
+
+            const smoke = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            smoke.setAttribute("fill", "rgba(128, 128, 128, 0.5)");
+            smoke.setAttribute("filter", "url(#smokeBlur)");
+            enemy.appendChild(smoke);
+            
+            const edges = [
+                {x: Math.random() * 1000, y: -100},
+                {x: Math.random() * 1000, y: 1100},
+                {x: -100, y: Math.random() * 1000},
+                {x: 1100, y: Math.random() * 1000}
+            ];
+            const spawnPoint = edges[Math.floor(Math.random() * edges.length)];
+            
+            enemiesGroup.appendChild(enemy);
+            enemies.push({
+                element: enemy,
+                x: spawnPoint.x,
+                y: spawnPoint.y,
+                smoke: smoke,
+                health: 100,
+                smokeTrail: [],
+                dx: 0,
+                dy: 0
+            });
+        }
+
+        function createLaser() {
+            const laser = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            laser.setAttribute("stroke", "lime");
+            laser.setAttribute("stroke-width", "2");
+            lasersGroup.appendChild(laser);
+            
+            lasers.push({
+                element: laser,
+                x: playerX,
+                y: playerY,
+                angle: laserAngle
+            });
+        }
+
+        function createExplosion(x, y, scale, size) {
+            const explosion = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", x);
+            circle.setAttribute("cy", y);
+            circle.setAttribute("r", size * scale);
+            circle.setAttribute("fill", "url(#explosionGradient)");
+            circle.setAttribute("filter", "url(#explosionBlur)");
+            explosion.appendChild(circle);
+
+            for (let i = 0; i < 20; i++) {
+                const smoke = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                smoke.setAttribute("cx", x);
+                smoke.setAttribute("cy", y);
+                smoke.setAttribute("r", (Math.random() * 5 + 2) * scale);
+                smoke.setAttribute("fill", "rgba(100, 100, 100, 0.5)");
+                smoke.setAttribute("filter", "url(#explosionBlur)");
+                explosion.appendChild(smoke);
+            }
+
+            for (let i = 0; i < 30; i++) {
+                const sparkle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                sparkle.setAttribute("cx", x);
+                sparkle.setAttribute("cy", y);
+                sparkle.setAttribute("r", Math.random() * 2 * scale);
+                sparkle.setAttribute("fill", "white");
+                explosion.appendChild(sparkle);
+            }
+
+            explosionsGroup.appendChild(explosion);
+            explosions.push({
+                element: explosion,
+                x: x,
+                y: y,
+                scale: scale,
+                size: size,
+                time: 0,
+                particles: Array.from(explosion.children)
+            });
+        }
+
+        function updateGame() {
+            const viewBox = gameArea.viewBox.baseVal;
+
+            // Update stars
+            stars.forEach(star => {
+                star.z -= starSpeed;
+                if (star.z <= 0) star.z += 1000;
+                
+                const scale = 500 / star.z;
+                const x = star.x * scale + viewBox.width / 2;
+                const y = star.y * scale + viewBox.height / 2;
+                
+                star.element.setAttribute('cx', x);
+                star.element.setAttribute('cy', y);
+                star.element.setAttribute('r', Math.max(0.1, scale));
+            });
+
+            // Update UFO position with smooth acceleration
+            ufoCurrentSpeed.x += (ufoTargetSpeed.x - ufoCurrentSpeed.x) * UFO_ACCELERATION;
+            ufoCurrentSpeed.y += (ufoTargetSpeed.y - ufoCurrentSpeed.y) * UFO_ACCELERATION;
+
+            playerX = Math.max(40, Math.min(viewBox.width - 40, playerX + ufoCurrentSpeed.x));
+            playerY = Math.max(40, Math.min(viewBox.height - 40, playerY + ufoCurrentSpeed.y));
+
+            playerUFO.setAttribute('transform', `translate(${playerX},${playerY})`);
+            playerUFO.style.opacity = isStealthMode ? '0.5' : '1';
+
+            // Update game objects (asteroids and planets)
+            for (let i = gameObjects.length - 1; i >= 0; i--) {
+                const obj = gameObjects[i];
+                obj.z -= starSpeed * (obj.type === 'asteroid' ? 1.5 : 1);
+                if (obj.z <= 0) {
+                    gameObjectsGroup.removeChild(obj.element);
+                    gameObjects.splice(i, 1);
+                    createGameObject(obj.type);
+                    continue;
+                }
+                
+                const scale = 500 / obj.z;
+                const x = obj.x * scale + viewBox.width / 2;
+                const y = obj.y * scale + viewBox.height / 2;
+                
+                if (obj.type === 'planet') {
+                    // Update growth progress
+                    obj.growthProgress = Math.min(1, obj.growthProgress + 0.01);
+                    const growthScale = obj.growthProgress * scale;
+
+                    const planet = obj.element.firstChild;
+                    const glow = obj.element.children[1];
+                    const finalRadius = 40 * scale;
+                    const currentRadius = finalRadius * obj.growthProgress;
+                    planet.setAttribute('cx', x);
+                    planet.setAttribute('cy', y);
+                    planet.setAttribute('r', currentRadius);
+                    planet.setAttribute('opacity', obj.growthProgress);
+
+                    glow.setAttribute('cx', x);
+                    glow.setAttribute('cy', y);
+                    glow.setAttribute('r', currentRadius + 5);
+                    glow.setAttribute('opacity', obj.visited ? 0.8 * obj.growthProgress : 0);
+
+                    // Update moons
+                    obj.moons.forEach((moon, index) => {
+                        moon.angle += moon.speed;
+                        const moonX = x + Math.cos(moon.angle) * currentRadius * moon.distance;
+                        const moonY = y + Math.sin(moon.angle) * currentRadius * moon.distance;
+                        const moonRadius = currentRadius * moon.size;
+                        
+                        moon.element.setAttribute('cx', moonX);
+                        moon.element.setAttribute('cy', moonY);
+                        moon.element.setAttribute('r', moonRadius);
+                        moon.element.setAttribute('opacity', obj.growthProgress);
+                    });
+                } else {
+                    const asteroid = obj.element.firstChild;
+                    asteroid.setAttribute('cx', x);
+                    asteroid.setAttribute('cy', y);
+                    asteroid.setAttribute('r', 20 * scale);
+
+                    const tail = obj.element.children[1];
+                    const tailLength = Math.min(500, 250 * (1000 - obj.z) / 1000);
+                    const tailWidth = 40 * scale;
+                    
+                    const centerX = viewBox.width / 2;
+                    const centerY = viewBox.height / 2;
+                    const dx = centerX - x;
+                    const dy = centerY - y;
+                    const angle = Math.atan2(dy, dx);
+
+                    const tailPath = `M${x},${y} 
+                                  L${x - Math.sin(angle) * tailWidth/2},${y + Math.cos(angle) * tailWidth/2}
+                                  L${x + Math.cos(angle) * tailLength * scale},${y + Math.sin(angle) * tailLength * scale}
+                                  L${x + Math.sin(angle) * tailWidth/2},${y - Math.cos(angle) * tailWidth/2}
+                                  Z`;
+                
+                    tail.setAttribute('d', tailPath);
+
+                    for (let j = 2; j < obj.element.children.length; j++) {
+                        const sparkle = obj.element.children[j];
+                        let sparkleX, sparkleY;
+                        if (j % 2 === 0) {
+                            sparkleX = x + (Math.random() - 0.5) * 40 * scale;
+                            sparkleY = y + (Math.random() - 0.5) * 40 * scale;
+                        } else {
+                            const t = Math.random();
+                            sparkleX = x + Math.cos(angle) * tailLength * scale * t;
+                            sparkleY = y + Math.sin(angle) * tailLength * scale * t;
+                            const perpX = -Math.sin(angle) * tailWidth/2 * (1 - t);
+                            const perpY = Math.cos(angle) * tailWidth/2 * (1 - t);
+                            sparkleX += perpX + (Math.random() - 0.5) * tailWidth * (1 - t);
+                            sparkleY += perpY + (Math.random() - 0.5) * tailWidth * (1 - t);
+                        }
+                        sparkle.setAttribute('cx', sparkleX);
+                        sparkle.setAttribute('cy', sparkleY);
+                        sparkle.setAttribute('r', (Math.random() * 2 + 1) * scale);
+                        sparkle.style.opacity = Math.random() * 0.7 + 0.3;
+                    }
+                }
+
+                const dx = x - playerX;
+                const dy = y - playerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const collisionRadius = (obj.type === 'planet' ? 40 : 20) * scale + 40;
+
+                if (distance < collisionRadius && !isStealthMode) {
+                    if (obj.type === 'planet' && !obj.visited) {
+                        score += 10; // Player gains points for visiting planets
+                        obj.visited = true;
+                        updateScoreDisplay();
+                    } else if (obj.type === 'asteroid') {
+                        health -= 10; // Player loses health only for asteroid collisions
+                        gameObjectsGroup.removeChild(obj.element);
+                        gameObjects.splice(i, 1);
+                        createGameObject(obj.type);
+                        createExplosion(x, y, scale, 40);
+                        updateHealthDisplay();
+                    }
+                }
+            }
+
+            // Update enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                if (!isStealthMode) {
+                    const dx = playerX - enemy.x;
+                    const dy = playerY - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    enemy.dx = (dx / distance) * ENEMY_SPEED;
+                    enemy.dy = (dy / distance) * ENEMY_SPEED;
+                }
+                
+                enemy.x += enemy.dx;
+                enemy.y += enemy.dy;
+
+                // Update enemy shape
+                const angle = Math.atan2(enemy.dy, enemy.dx);
+                const size = 20;
+                const points = [
+                    [enemy.x + Math.cos(angle) * size, enemy.y + Math.sin(angle) * size],
+                    [enemy.x - Math.cos(angle + 0.5) * size, enemy.y - Math.sin(angle + 0.5) * size],
+                    [enemy.x - Math.cos(angle - 0.5) * size, enemy.y - Math.sin(angle - 0.5) * size]
+                ];
+                
+                enemy.element.firstChild.setAttribute('d', `M${points[0][0]},${points[0][1]} L${points[1][0]},${points[1][1]} L${points[2][0]},${points[2][1]} Z`);
+
+                // Update smoke trail
+                enemy.smokeTrail.unshift({x: enemy.x, y: enemy.y, age: 0});
+                if (enemy.smokeTrail.length > 20) {
+                    enemy.smokeTrail.pop();
+                }
+
+                let smokePath = `M${enemy.x},${enemy.y}`;
+                enemy.smokeTrail.forEach((point, index) => {
+                    point.age++;
+                    const opacity = 1 - point.age / 20;
+                    smokePath += ` L${point.x},${point.y}`;
+                });
+                enemy.smoke.setAttribute('d', smokePath);
+                enemy.smoke.setAttribute('opacity', 0.5);
+
+                // Check if enemy is out of bounds
+                if (enemy.x < -100 || enemy.x > viewBox.width + 100 || enemy.y < -100 || enemy.y > viewBox.height + 100) {
+                    enemiesGroup.removeChild(enemy.element);
+                    enemies.splice(i, 1);
+                }
+
+                // Check collision with player
+                if (!isStealthMode) {
+                    const dx = playerX - enemy.x;
+                    const dy = playerY - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < 60) {
+                        health -= 10;
+                        enemiesGroup.removeChild(enemy.element);
+                        enemies.splice(i, 1);
+                        createExplosion(enemy.x, enemy.y, 1, 60);
+                        updateHealthDisplay();
+                    }
+                }
+            }
+
+            if (isFiring && !isStealthMode) {
+                createLaser();
+            }
+
+            // Update lasers
+            for (let i = lasers.length - 1; i >= 0; i--) {
+                const laser = lasers[i];
+                laser.x += Math.cos(laser.angle) * 10;
+                laser.y += Math.sin(laser.angle) * 10;
+
+                laser.element.setAttribute('x1', laser.x);
+                laser.element.setAttribute('y1', laser.y);
+                laser.element.setAttribute('x2', laser.x + Math.cos(laser.angle) * 20);
+                laser.element.setAttribute('y2', laser.y + Math.sin(laser.angle) * 20);
+
+                if (laser.x < 0 || laser.x > viewBox.width || laser.y < 0 || laser.y > viewBox.height) {
+                    lasersGroup.removeChild(laser.element);
+                    lasers.splice(i, 1);
+                    continue;
+                }
+
+                // Collision detection with enemies
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const enemy = enemies[j];
+                    const dx = laser.x - enemy.x;
+                    const dy = laser.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 20) {
+                        enemy.health -= 25;
+                        if (enemy.health <= 0) {
+                            enemiesGroup.removeChild(enemy.element);
+                            enemies.splice(j, 1);
+                            createExplosion(enemy.x, enemy.y, 1, 60);
+                            score += 10;
+                            updateScoreDisplay();
+                        }
+                        lasersGroup.removeChild(laser.element);
+                        lasers.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+
+            // Update explosions
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                const explosion = explosions[i];
+                explosion.time += 1;
+                
+                if (explosion.time > 30) {
+                    explosionsGroup.removeChild(explosion.element);
+                    explosions.splice(i, 1);
+                } else {
+                    const progress = explosion.time / 30;
+                    const opacity = 1 - progress;
+                    const scale = explosion.scale * (1 + progress * 0.5);
+                    
+                    explosion.particles.forEach((particle, index) => {
+                        if (index === 0) {
+                            // Main explosion circle
+                            particle.setAttribute('r', explosion.size * scale);
+                            particle.style.opacity = opacity;
+                        } else if (index < 21) {
+                            // Smoke particles
+                            const angle = (index / 20) * Math.PI * 2;
+                            const distance = progress * 30 * explosion.scale;
+                            const x = explosion.x + Math.cos(angle) * distance;
+                            const y = explosion.y + Math.sin(angle) * distance;
+                            
+                            particle.setAttribute('cx', x);
+                            particle.setAttribute('cy', y);
+                            particle.setAttribute('r', (particle.getAttribute('r') * scale) / explosion.scale);
+                            particle.style.opacity = opacity * 0.7;
+                        } else {
+                            // Sparkles
+                            const angle = Math.random() * Math.PI * 2;
+                            const distance = progress * 50 * explosion.scale;
+                            const x = explosion.x + Math.cos(angle) * distance;
+                            const y = explosion.y + Math.sin(angle) * distance;
+                            
+                            particle.setAttribute('cx', x);
+                            particle.setAttribute('cy', y);
+                            particle.setAttribute('r', (particle.getAttribute('r') * scale) / explosion.scale);
+                            particle.style.opacity = opacity * (1 - progress);
+                        }
+                    });
+                }
+            }
+
+            if (Math.random() < 0.001 && enemies.length < 3) {
+                createEnemy();
+            }
+
+            if (health <= 0) {
+                gameOver();
+            }
+
+            requestAnimationFrame(updateGame);
+        }
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `SCORE ${score}`;
+        }
+
+        function updateHealthDisplay() {
+            healthDisplay.textContent = `HEALTH ${health}`;
+        }
+
+        function gameOver() {
+            alert(`Game Over! Your score: ${score}`);
+            resetGame();
+        }
+
+        function resetGame() {
+            score = 0;
+            health = 100;
+            playerX = gameArea.viewBox.baseVal.width / 2;
+            playerY = gameArea.viewBox.baseVal.height * 0.8;
+            ufoCurrentSpeed = { x: 0, y: 0 };
+            ufoTargetSpeed = { x: 0, y: 0 };
+            isStealthMode = false;
+
+            // Clear all game objects
+            while (gameObjectsGroup.firstChild) gameObjectsGroup.removeChild(gameObjectsGroup.firstChild);
+            while (enemiesGroup.firstChild) enemiesGroup.removeChild(enemiesGroup.firstChild);
+            while (lasersGroup.firstChild) lasersGroup.removeChild(lasersGroup.firstChild);
+            while (explosionsGroup.firstChild) explosionsGroup.removeChild(explosionsGroup.firstChild);
+
+            gameObjects.length = 0;
+            enemies.length = 0;
+            lasers.length = 0;
+            explosions.length = 0;
+
+            // Recreate initial game objects
+            for (let i = 0; i < 3; i++) createGameObject('planet');
+            for (let i = 0; i < 5; i++) createGameObject('asteroid');
+
+            updateScoreDisplay();
+            updateHealthDisplay();
+            playerUFO.setAttribute('transform', `translate(${playerX},${playerY})`);
+            playerUFO.style.opacity = '1';
+            stealthBtn.style.background = 'linear-gradient(to bottom, #4a89dc, #2a69bc)';
+        }
+
+        // Laser aiming and firing
+        let isDragging = false;
+
+        laserBtn.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            isFiring = true;
+            updateLaserAngle(e);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                updateLaserAngle(e);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            isFiring = false;
+            resetLaserButton();
+        });
+
+        function updateLaserAngle(e) {
+            const rect = laserContainer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const dx = e.clientX - centerX;
+            const dy = e.clientY - centerY;
+            laserAngle = Math.atan2(dy, dx);
+
+            // Update laser button position
+            const maxRadius = laserContainer.offsetWidth / 2 - laserBtn.offsetWidth / 2;
+            const distance = Math.min(Math.sqrt(dx * dx + dy * dy), maxRadius);
+            const buttonX = (Math.cos(laserAngle) * distance) / (laserContainer.offsetWidth / 2) * 100;
+            const buttonY = (Math.sin(laserAngle) * distance) / (laserContainer.offsetHeight / 2) * 100;
+            laserBtn.style.left = `${50 + buttonX}%`;
+            laserBtn.style.top = `${50 + buttonY}%`;
+        }
+
+        function resetLaserButton() {
+            laserBtn.style.left = '50%';
+            laserBtn.style.top = '50%';
+        }
+
+        // UFO movement
+        function setUFODirection(dx, dy) {
+            const length = Math.sqrt(dx * dx + dy * dy);
+            if (length > 0) {
+                ufoTargetSpeed.x = (dx / length) * UFO_MAX_SPEED;
+                ufoTargetSpeed.y = (dy / length) * UFO_MAX_SPEED;
+            } else {
+                ufoTargetSpeed.x = 0;
+                ufoTargetSpeed.y = 0;
+            }
+        }
+
+        const controlButtons = {
+            'upBtn': [0, -1],
+            'downBtn': [0, 1],
+            'leftBtn': [-1, 0],
+            'rightBtn': [1, 0]
+        };
+
+        for (const [btnId, [dx, dy]] of Object.entries(controlButtons)) {
+            const btn = document.getElementById(btnId);
+            btn.addEventListener('mousedown', () => setUFODirection(dx, dy));
+            btn.addEventListener('mouseup', () => setUFODirection(0, 0));
+            btn.addEventListener('mouseleave', () => setUFODirection(0, 0));
+        }
+
+        // Keyboard controls for UFO movement
+        const pressedKeys = new Set();
+        document.addEventListener('keydown', (event) => {
+            pressedKeys.add(event.key);
+            updateUFOMovement();
+        });
+
+        document.addEventListener('keyup', (event) => {
+            pressedKeys.delete(event.key);
+            updateUFOMovement();
+            if (event.key === ' ') {
+                isFiring = false;
+            }
+        });
+
+        function updateUFOMovement() {
+            let dx = 0;
+            let dy = 0;
+            if (pressedKeys.has('ArrowUp')) dy -= 1;
+            if (pressedKeys.has('ArrowDown')) dy += 1;
+            if (pressedKeys.has('ArrowLeft')) dx -= 1;
+            if (pressedKeys.has('ArrowRight')) dx += 1;
+            if (pressedKeys.has(' ')) isFiring = true;
+            
+            setUFODirection(dx, dy);
+        }
+
+        // Star speed control
+        speedSlider.addEventListener('input', () => {
+            const sliderValue = speedSlider.value;
+            starSpeed = STAR_MIN_SPEED + (STAR_MAX_SPEED - STAR_MIN_SPEED) * (sliderValue / 100);
+        });
+
+        // Stealth mode
+        stealthBtn.addEventListener('click', () => {
+            isStealthMode = !isStealthMode;
+            playerUFO.style.opacity = isStealthMode ? '0.5' : '1';
+            stealthBtn.style.background = isStealthMode ? 'linear-gradient(to bottom, #7ac5cd, #5a95a3)' : 'linear-gradient(to bottom, #4a89dc, #2a69bc)';
+        });
+
+        // Reset button
+        resetBtn.addEventListener('click', resetGame);
+
+        // Fullscreen button
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                gameContainer.requestFullscreen();
+                fullscreenBtn.textContent = 'EXIT';
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    fullscreenBtn.textContent = 'EXPAND';
+                }
+            }
+        });
+
+        // Add event listener for window resize and fullscreen change
+        window.addEventListener('resize', updateGameArea);
+        document.addEventListener('fullscreenchange', updateGameArea);
+
+        function updateGameArea() {
+            const gameAreaRect = gameContainer.getBoundingClientRect();
+            const aspectRatio = gameAreaRect.width / gameAreaRect.height;
+            
+            if (aspectRatio > 1) {
+                // Landscape
+                gameArea.setAttribute('viewBox', `0 0 ${1000 * aspectRatio} 1000`);
+            } else {
+                // Portrait
+                gameArea.setAttribute('viewBox', `0 0 1000 ${1000 / aspectRatio}`);
+            }
+
+            // Center the UFO after resizing
+            const viewBox = gameArea.viewBox.baseVal;
+            playerX = viewBox.width / 2;
+            playerY = viewBox.height * 0.8;
+            playerUFO.setAttribute('transform', `translate(${playerX},${playerY})`);
+        }
+
+        // Touch events for mobile devices
+        let touchStartX, touchStartY;
+
+        gameArea.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, false);
+
+        gameArea.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!touchStartX || !touchStartY) {
+                return;
+            }
+
+            let touchEndX = e.touches[0].clientX;
+            let touchEndY = e.touches[0].clientY;
+
+            let dx = touchEndX - touchStartX;
+            let dy = touchEndY - touchStartY;
+
+            setUFODirection(dx * 0.005, dy * 0.005);  // Adjusted sensitivity
+
+            touchStartX = touchEndX;
+            touchStartY = touchEndY;
+        }, false);
+
+        gameArea.addEventListener('touchend', () => {
+            touchStartX = null;
+            touchStartY = null;
+            setUFODirection(0, 0);
+        }, false);
+
+        // Double tap to shoot
+        let lastTap = 0;
+        gameArea.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 500 && tapLength > 0) {
+                isFiring = true;
+                setTimeout(() => {
+                    isFiring = false;
+                }, 200);
+                e.preventDefault();
+            }
+            lastTap = currentTime;
+        });
+
+        // Function to create stars
+        function createStars(count) {
+            for (let i = 0; i < count; i++) {
+                stars.push(createStar());
+            }
+        }
+
+        // Initialize the game
+        function initGame() {
+            createStars(200);
+            for (let i = 0; i < 3; i++) createGameObject('planet');
+            for (let i = 0; i < 5; i++) createGameObject('asteroid');
+            updateScoreDisplay();
+            updateHealthDisplay();
+            updateGameArea();
+            updateGame();
+        }
+
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>
