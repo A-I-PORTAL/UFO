@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar System Game with Radiating Star Field</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #gameArea {
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+        #gameContainer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-gap: 10px;
+        }
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            border: none;
+            background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        }
+        .control-btn:active {
+            background: linear-gradient(to top, #4a4a4a, #2a2a2a);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        #laserContainer, #speedContainer {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        #laserBtn, #speedBtn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        #laserBtn {
+            background: linear-gradient(to bottom, #ff6b6b, #ff0000);
+        }
+        #speedBtn {
+            background: linear-gradient(to bottom, #6CAF70, #4CAF50);
+        }
+        #laserContainer {
+            grid-column: 2;
+            grid-row: 2;
+        }
+        #speedContainer {
+            grid-column: 3;
+            grid-row: 1;
+        }
+        #upBtn { grid-column: 2; grid-row: 1; }
+        #leftBtn { grid-column: 1; grid-row: 2; }
+        #rightBtn { grid-column: 3; grid-row: 2; }
+        #downBtn { grid-column: 2; grid-row: 3; }
+        #stealthContainer {
+            grid-column: 1;
+            grid-row: 1;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        #stealthBtn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(to bottom, #4a89dc, #2a69bc);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <svg id="gameArea" viewBox="0 0 1000 1000">
+            <defs>
+                <radialGradient id="sunGradient">
+                    <stop offset="0%" stop-color="#FFD700"></stop>
+                    <stop offset="50%" stop-color="#FFA500"></stop>
+                    <stop offset="100%" stop-color="#FF8C00"></stop>
+                </radialGradient>
+                <radialGradient id="earthGradient">
+                    <stop offset="0%" stop-color="#4b66ad"></stop>
+                    <stop offset="60%" stop-color="#84b6d9"></stop>
+                    <stop offset="100%" stop-color="#b7d9e8"></stop>
+                </radialGradient>
+                <radialGradient id="jupiterGradient">
+                    <stop offset="0%" stop-color="#b76e2e"></stop>
+                    <stop offset="33%" stop-color="#e3b168"></stop>
+                    <stop offset="66%" stop-color="#f0d082"></stop>
+                    <stop offset="100%" stop-color="#f4e4b5"></stop>
+                </radialGradient>
+                <radialGradient id="marsGradient">
+                    <stop offset="0%" stop-color="#8c3b1a"></stop>
+                    <stop offset="50%" stop-color="#b9522b"></stop>
+                    <stop offset="100%" stop-color="#e37547"></stop>
+                </radialGradient>
+                <radialGradient id="moonGradient">
+                    <stop offset="0%" stop-color="#d0d0d0"></stop>
+                    <stop offset="50%" stop-color="#a0a0a0"></stop>
+                    <stop offset="100%" stop-color="#808080"></stop>
+                </radialGradient>
+            </defs>
+            <g id="stars"></g>
+            <g id="solarSystems"></g>
+        </svg>
+
+        <div id="controls">
+            <div id="stealthContainer">
+                <button id="stealthBtn"></button>
+            </div>
+            <button class="control-btn" id="upBtn">↑</button>
+            <div id="speedContainer">
+                <button id="speedBtn"></button>
+            </div>
+            <button class="control-btn" id="leftBtn">←</button>
+            <div id="laserContainer">
+                <button id="laserBtn"></button>
+            </div>
+            <button class="control-btn" id="rightBtn">→</button>
+            <button class="control-btn" id="downBtn">↓</button>
+        </div>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const starsGroup = document.getElementById('stars');
+        const solarSystemsGroup = document.getElementById('solarSystems');
+        const speedBtn = document.getElementById('speedBtn');
+        const speedContainer = document.getElementById('speedContainer');
+        const stealthBtn = document.getElementById('stealthBtn');
+
+        const stars = [];
+        const solarSystems = [];
+        const planetTypes = ['earth', 'jupiter', 'mars'];
+
+        let starSpeedX = 0;
+        let starSpeedY = 0;
+
+        const STAR_MAX_SPEED = 12.5;
+        const SOLAR_SYSTEM_SPAWN_DISTANCE = 5000;
+
+        function createStar() {
+            const star = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            star.setAttribute("r", Math.random() * 1.5 + 0.5);
+            star.setAttribute("fill", "white");
+            starsGroup.appendChild(star);
+            return {
+                element: star,
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                z: Math.random() * 1000
+            };
+        }
+
+        function createSolarSystem() {
+            const solarSystem = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            solarSystemsGroup.appendChild(solarSystem);
+
+            const sun = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            sun.setAttribute("r", 80);
+            sun.setAttribute("fill", "url(#sunGradient)");
+            solarSystem.appendChild(sun);
+
+            const planets = [];
+            for (let i = 0; i < 3; i++) {
+                const planet = createPlanet(planetTypes[i], 400 * (0.5 + i * 0.25), 0.001 / (0.5 + i * 0.25));
+                solarSystem.appendChild(planet.element);
+                planets.push(planet);
+            }
+
+            const angle = Math.random() * Math.PI * 2;
+            const x = Math.cos(angle) * SOLAR_SYSTEM_SPAWN_DISTANCE;
+            const y = Math.sin(angle) * SOLAR_SYSTEM_SPAWN_DISTANCE;
+            const z = Math.random() * SOLAR_SYSTEM_SPAWN_DISTANCE + SOLAR_SYSTEM_SPAWN_DISTANCE;
+
+            return {
+                element: solarSystem,
+                x: x,
+                y: y,
+                z: z,
+                sun: sun,
+                planets: planets
+            };
+        }
+
+        function createPlanet(type, orbitRadius, orbitSpeed) {
+            const planet = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            
+            const planetBody = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            planetBody.setAttribute("r", 40);
+            planetBody.setAttribute("fill", `url(#${type}Gradient)`);
+            planet.appendChild(planetBody);
+
+            const glow = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            glow.setAttribute("r", 45);
+            glow.setAttribute("fill", "none");
+            glow.setAttribute("stroke", "aqua");
+            glow.setAttribute("stroke-width", "2");
+            glow.setAttribute("opacity", "0");
+            planet.appendChild(glow);
+
+            const moonCount = Math.floor(Math.random() * 3) + 1;
+            const moons = [];
+            for (let i = 0; i < moonCount; i++) {
+                const moon = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                moon.setAttribute("r", 5 + Math.random() * 5);
+                moon.setAttribute("fill", "url(#moonGradient)");
+                planet.appendChild(moon);
+                moons.push({
+                    element: moon,
+                    angle: Math.random() * Math.PI * 2,
+                    distance: 60 + Math.random() * 30,
+                    speed: (Math.random() * 0.02 + 0.01) * (Math.random() < 0.5 ? 1 : -1)
+                });
+            }
+
+            return {
+                element: planet,
+                glow: glow,
+                orbitAngle: Math.random() * Math.PI * 2,
+                orbitRadius: orbitRadius,
+                orbitSpeed: orbitSpeed,
+                moons: moons,
+                visited: false
+            };
+        }
+
+        function updateStarSpeed(e) {
+            const rect = speedContainer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const dx = e.clientX - centerX;
+            const dy = centerY - e.clientY;
+
+            const maxRadius = speedContainer.offsetWidth / 2 - speedBtn.offsetWidth / 2;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+
+            const clampedDistance = Math.min(distance, maxRadius);
+            const buttonX = Math.cos(angle) * clampedDistance;
+            const buttonY = Math.sin(angle) * clampedDistance;
+
+            speedBtn.style.transform = `translate(${buttonX}px, ${buttonY}px)`;
+
+            starSpeedY = (clampedDistance / maxRadius) * STAR_MAX_SPEED * (dy > 0 ? 1 : -1);
+            starSpeedX = (clampedDistance / maxRadius) * STAR_MAX_SPEED * (dx > 0 ? -1 : 1) * 0.5;
+        }
+
+        function updateGame() {
+            const viewBox = gameArea.viewBox.baseVal;
+
+            // Update stars
+            for (let i = stars.length - 1; i >= 0; i--) {
+                const star = stars[i];
+                star.z -= starSpeedY;
+                star.x -= starSpeedX;
+
+                if (star.z <= 0 || star.z > 1000 || Math.abs(star.x) > 1000 || Math.abs(star.y) > 1000) {
+                    starsGroup.removeChild(star.element);
+                    stars.splice(i, 1);
+                    stars.push(createStar());
+                } else {
+                    const scale = 500 / star.z;
+                    const x = star.x * scale + viewBox.width / 2;
+                    const y = star.y * scale + viewBox.height / 2;
+                    
+                    star.element.setAttribute('cx', x);
+                    star.element.setAttribute('cy', y);
+                    star.element.setAttribute('r', Math.max(0.1, scale));
+                }
+            }
+
+            // Update solar systems
+            for (let i = solarSystems.length - 1; i >= 0; i--) {
+                const system = solarSystems[i];
+                system.z -= starSpeedY;
+                system.x -= starSpeedX;
+
+                if (system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 2) {
+                    solarSystemsGroup.removeChild(system.element);
+                    solarSystems.splice(i, 1);
+                    solarSystems.push(createSolarSystem());
+                } else {
+                    const scale = 500 / system.z;
+                    const x = system.x * scale + viewBox.width / 2;
+                    const y = system.y * scale + viewBox.height / 2;
+                    
+                    system.element.setAttribute('transform', `translate(${x}, ${y}) scale(${scale})`);
+
+                    // Update planets
+                    system.planets.forEach(planet => {
+                        planet.orbitAngle += planet.orbitSpeed;
+                        const planetX = Math.cos(planet.orbitAngle) * planet.orbitRadius;
+                        const planetY = Math.sin(planet.orbitAngle) * planet.orbitRadius;
+                        planet.element.setAttribute('transform', `translate(${planetX}, ${planetY})`);
+
+                        // Update moons
+                        planet.moons.forEach(moon => {
+                            moon.angle += moon.speed;
+                            const moonX = Math.cos(moon.angle) * moon.distance;
+                            const moonY = Math.sin(moon.angle) * moon.distance;
+                            moon.element.setAttribute('cx', moonX);
+                            moon.element.setAttribute('cy', moonY);
+                        });
+
+                        // Check if player visited the planet
+                        const dx = x + planetX - playerX;
+                        const dy = y + planetY - playerY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < 100 * scale && !planet.visited && !isStealthMode) {
+                            planet.visited = true;
+                            planet.glow.setAttribute('opacity', '0.8');
+                            score += 10;
+                            updateScoreDisplay();
+                        }
+                    });
+                }
+            }
+
+            requestAnimationFrame(updateGame);
+        }
+
+        // Initialize game objects
+        function initGame() {
+            for (let i = 0; i < 200; i++) {
+                stars.push(createStar());
+            }
+            for (let i = 0; i < 3; i++) {
+                solarSystems.push(createSolarSystem());
+            }
+            updateGameArea();
+            updateGame();
+        }
+
+        // Star speed control
+        let isSpeedDragging = false;
+
+        speedBtn.addEventListener('mousedown', (e) => {
+            isSpeedDragging = true;
+            updateStarSpeed(e);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isSpeedDragging) {
+                updateStarSpeed(e);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isSpeedDragging = false;
+            resetSpeedButton();
+        });
+
+        function resetSpeedButton() {
+            speedBtn.style.transform = 'translate(0, 0)';
+            starSpeedX = 0;
+            starSpeedY = 0;
+        }
+
+        // Stealth mode
+        stealthBtn.addEventListener('click', () => {
+            isStealthMode = !isStealthMode;
+            playerUFO.style.opacity = isStealthMode ? '0.5' : '1';
+            stealthBtn.style.background = isStealthMode ? 'linear-gradient(to bottom, #7ac5cd, #5a95a3)' : 'linear-gradient(to bottom, #4a89dc, #2a69bc)';
+        });
+
+        // Add event listener for window resize
+        window.addEventListener('resize', updateGameArea);
+
+        function updateGameArea() {
+            const gameAreaRect = gameContainer.getBoundingClientRect();
+            const aspectRatio = gameAreaRect.width / gameAreaRect.height;
+            
+            if (aspectRatio > 1) {
+                // Landscape
+                gameArea.setAttribute('viewBox', `0 0 ${1000 * aspectRatio} 1000`);
+            } else {
+                // Portrait
+                gameArea.setAttribute('viewBox', `0 0 1000 ${1000 / aspectRatio}`);
+            }
+        }
+
+        // Touch events for mobile devices
+        speedBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isSpeedDragging = true;
+            updateStarSpeed(e.touches[0]);
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (isSpeedDragging) {
+                e.preventDefault();
+                updateStarSpeed(e.touches[0]);
+            }
+        });
+
+        document.addEventListener('touchend', () => {
+            isSpeedDragging = false;
+            resetSpeedButton();
+        });
+
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>
