@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFO Adventure</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+        }
+        #startPage {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #startPage h1 {
+            font-size: 48px;
+            color: aqua;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #startPage p {
+            font-size: 18px;
+            color: aqua;
+            text-align: center;
+            max-width: 800px;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        #startButton {
+            font-size: 24px;
+            padding: 15px 30px;
+            background-color: aqua;
+            color: #000;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        #startButton:hover {
+            background-color: #00ffff;
+            transform: scale(1.1);
+        }
+        #gameContainer {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        #gameArea {
+            width: 100%;
+            height: 100%;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+        .control-button {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .control-button:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        #resetButton, #expandButton {
+            position: absolute;
+            top: 20px;
+            font-size: 16px;
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 20px;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #resetButton {
+            left: 20px;
+        }
+        #expandButton {
+            right: 20px;
+        }
+        #resetButton:hover, #expandButton:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        .status-display {
+            position: absolute;
+            top: 20px;
+            font-size: 18px;
+            padding: 10px 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+        }
+        #score {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        #health {
+            right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="startPage">
+        <h1>UFO</h1>
+        <p>You've escaped your repressive planet of evil aliens who have enslaved every star system in the galaxy. A lone hero, you explore the universe in search of developing civilizations to share your innovative technology with, in the hopes of empowering the universe. But the minions of your planet's overlords relentlessly hunt you down in an effort to thwart your good deeds. Can you survive long enough to save the universe and put an end to your planet's tyranny?</p>
+        <p>CONTROLS<br>
+        Arrow keys or on-screen arrows: Move UFO<br>
+        Space or Laser button: Fire laser<br>
+        Speed button: Adjust travel speed<br>
+        Stealth button: Toggle stealth mode<br>
+        Reset button: Restart game<br>
+        Expand button: Toggle fullscreen</p>
+        <button id="startButton">START</button>
+    </div>
+    <div id="gameContainer">
+        <svg id="gameArea" viewbox="0 0 1000 1000">
+            <defs>
+                <radialGradient id="asteroidGradient">
+                    <stop offset="0%" stop-color="#A0A0A0"></stop>
+                    <stop offset="50%" stop-color="#808080"></stop>
+                    <stop offset="100%" stop-color="#606060"></stop>
+                </radialGradient>
+                <radialGradient id="earthGradient">
+                    <stop offset="0%" stop-color="#4b66ad"></stop>
+                    <stop offset="60%" stop-color="#84b6d9"></stop>
+                    <stop offset="100%" stop-color="#b7d9e8"></stop>
+                </radialGradient>
+                <radialGradient id="jupiterGradient">
+                    <stop offset="0%" stop-color="#b76e2e"></stop>
+                    <stop offset="33%" stop-color="#e3b168"></stop>
+                    <stop offset="66%" stop-color="#f0d082"></stop>
+                    <stop offset="100%" stop-color="#f4e4b5"></stop>
+                </radialGradient>
+                <radialGradient id="marsGradient">
+                    <stop offset="0%" stop-color="#8c3b1a"></stop>
+                    <stop offset="50%" stop-color="#b9522b"></stop>
+                    <stop offset="100%" stop-color="#e37547"></stop>
+                </radialGradient>
+                <radialGradient id="moonGradient">
+                    <stop offset="0%" stop-color="#d0d0d0"></stop>
+                    <stop offset="50%" stop-color="#a0a0a0"></stop>
+                    <stop offset="100%" stop-color="#808080"></stop>
+                </radialGradient>
+                <radialGradient id="sunGradient">
+                    <stop offset="0%" stop-color="#FFD700"></stop>
+                    <stop offset="50%" stop-color="#FFA500"></stop>
+                    <stop offset="100%" stop-color="#FF8C00"></stop>
+                </radialGradient>
+                <filter id="fuzzyEdge">
+                    <fegaussianblur stddeviation="3"></fegaussianblur>
+                </filter>
+                <lineargradient id="enemyBodyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#800000"></stop>
+                    <stop offset="50%" stop-color="#600000"></stop>
+                    <stop offset="100%" stop-color="#400000"></stop>
+                </lineargradient>
+                <lineargradient id="enemyWingGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#a00000"></stop>
+                    <stop offset="50%" stop-color="#800000"></stop>
+                    <stop offset="100%" stop-color="#600000"></stop>
+                </lineargradient>
+                <lineargradient id="enemyCockpitGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#ff6666"></stop>
+                    <stop offset="50%" stop-color="#ff3333"></stop>
+                    <stop offset="100%" stop-color="#ff0000"></stop>
+                </lineargradient>
+                <filter id="smokeBlur">
+                    <fegaussianblur in="SourceGraphic" stddeviation="5"></fegaussianblur>
+                </filter>
+                <lineargradient id="ufoBodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#e0e0e0"></stop>
+                    <stop offset="50%" stop-color="#b0b0b0"></stop>
+                    <stop offset="100%" stop-color="#909090"></stop>
+                </lineargradient>
+                <lineargradient id="ufoDomeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#00ffff" stop-opacity="0.5"></stop>
+                    <stop offset="100%" stop-color="#00ffff" stop-opacity="0.3"></stop>
+                </lineargradient>
+                <lineargradient id="ufoRingGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ffffff"></stop>
+                    <stop offset="50%" stop-color="#c0c0c0"></stop>
+                    <stop offset="100%" stop-color="#a0a0a0"></stop>
+                </lineargradient>
+                <radialgradient id="explosionGradient">
+                    <stop offset="0%" stop-color="#FFFF00"></stop>
+                    <stop offset="25%" stop-color="#FF8C00"></stop>
+                    <stop offset="50%" stop-color="#FF4500"></stop>
+                    <stop offset="75%" stop-color="#8B0000"></stop>
+                    <stop offset="100%" stop-color="rgba(0,0,0,0)"></stop>
+                </radialgradient>
+                <filter id="explosionBlur">
+                    <fegaussianblur in="SourceGraphic" stddeviation="10"></fegaussianblur>
+                </filter>
+            </defs>
+            <g id="stars"></g>
+            <g id="solarSystems"></g>
+            <g id="gameObjects"></g>
+            <g id="enemies"></g>
+            <g id="lasers"></g>
+            <g id="explosions"></g>
+            <g id="playerUFO" transform="translate(500,800)">
+                <!-- UFO Body -->
+                <ellipse cx="0" cy="0" rx="40" ry="12" fill="url(#ufoBodyGradient)"></ellipse>
+                <!-- UFO Dome -->
+                <ellipse cx="0" cy="-5" rx="25" ry="10" fill="url(#ufoDomeGradient)"></ellipse>
+                <!-- UFO Interior Floor (enlarged) -->
+                <ellipse cx="0" cy="-2" rx="20" ry="6" fill="#404040" opacity="0.6"></ellipse>
+                <!-- UFO Rings -->
+                <path d="M-40,0 A40,12 0 0,0 40,0" fill="none" stroke="url(#ufoRingGradient)" stroke-width="3"></path>
+                <path d="M-38,0 A38,11 0 0,0 38,0" fill="none" stroke="#00ffff" stroke-width="1"></path>
+                <!-- UFO Dome Reflection -->
+                <path d="M-20,-10 Q0,-15 20,-10" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.6"></path>
+                <!-- UFO Bottom Light -->
+                <ellipse cx="0" cy="2" rx="5" ry="2" fill="#80ffff" opacity="0.6"></ellipse>
+            </g>
+        </svg>
+        <div id="controls">
+            <button id="upButton" class="control-button">↑</button>
+            <button id="leftButton" class="control-button">←</button>
+            <button id="laserButton" class="control-button">🔫</button>
+            <button id="rightButton" class="control-button">→</button>
+            <button id="downButton" class="control-button">↓</button>
+            <button id="speedButton" class="control-button">🚀</button>
+            <button id="stealthButton" class="control-button">🕵️</button>
+        </div>
+        <button id="resetButton">RESET</button>
+        <button id="expandButton">EXPAND</button>
+        <div id="score" class="status-display">SCORE 0</div>
+        <div id="health" class="status-display">HEALTH 100</div>
+    </div>
+    <script>
+        // Game variables
+        let gameStarted = false;
+        let score = 0;
+        let health = 100;
+        let playerX = 500;
+        let playerY = 800;
+        let playerSpeed = 5;
+        let gameSpeed = 1;
+        let stealthMode = false;
+        let lasers = [];
+        let enemies = [];
+        let stars = [];
+        let solarSystems = [];
+        let explosions = [];
+
+        // DOM elements
+        const gameArea = document.getElementById('gameArea');
+        const starsGroup = document.getElementById('stars');
+        const solarSystemsGroup = document.getElementById('solarSystems');
+        const gameObjectsGroup = document.getElementById('gameObjects');
+        const enemiesGroup = document.getElementById('enemies');
+        const lasersGroup = document.getElementById('lasers');
+        const explosionsGroup = document.getElementById('explosions');
+        const playerUFO = document.getElementById('playerUFO');
+        const scoreDisplay = document.getElementById('score');
+        const healthDisplay = document.getElementById('health');
+        const startPage = document.getElementById('startPage');
+        const startButton = document.getElementById('startButton');
+
+        // Game initialization
+        function initGame() {
+            createStars();
+            createSolarSystems();
+            gameLoop();
+        }
+
+        // Create stars
+        function createStars() {
+            for (let i = 0; i < 200; i++) {
+                const star = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                star.setAttribute('cx', Math.random() * 1000);
+                star.setAttribute('cy', Math.random() * 1000);
+                star.setAttribute('r', Math.random() * 2 + 1);
+                star.setAttribute('fill', '#FFFFFF');
+                starsGroup.appendChild(star);
+                stars.push(star);
+            }
+        }
+
+        // Create solar systems
+        function createSolarSystems() {
+            for (let i = 0; i < 5; i++) {
+                const solarSystem = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                const x = Math.random() * 1000;
+                const y = Math.random() * 1000;
+                solarSystem.setAttribute('transform', `translate(${x},${y})`);
+
+                const sun = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                sun.setAttribute('r', 20);
+                sun.setAttribute('fill', 'url(#sunGradient)');
+                solarSystem.appendChild(sun);
+
+                const planets = ['earthGradient', 'marsGradient', 'jupiterGradient'];
+                for (let j = 0; j < 3; j++) {
+                    const planet = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    planet.setAttribute('cx', (j + 1) * 60);
+                    planet.setAttribute('r', 10 + j * 5);
+                    planet.setAttribute('fill', `url(#${planets[j]})`);
+                    solarSystem.appendChild(planet);
+
+                    if (j === 0) {  // Add a moon to the first planet
+                        const moon = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        moon.setAttribute('cx', 60);
+                        moon.setAttribute('cy', -15);
+                        moon.setAttribute('r', 3);
+                        moon.setAttribute('fill', 'url(#moonGradient)');
+                        solarSystem.appendChild(moon);
+                    }
+                }
+
+                solarSystemsGroup.appendChild(solarSystem);
+                solarSystems.push({ element: solarSystem, x, y });
+            }
+        }
+
+        // Create enemy
+        function createEnemy() {
+            const enemy = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            const x = Math.random() * 1000;
+            const y = -50;
+            enemy.setAttribute('transform', `translate(${x},${y})`);
+
+            const body = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            body.setAttribute('d', 'M-20,0 L20,0 L0,-30 Z');
+            body.setAttribute('fill', 'url(#enemyBodyGradient)');
+            enemy.appendChild(body);
+
+            const leftWing = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            leftWing.setAttribute('d', 'M-20,0 L-40,20 L-10,20 Z');
+            leftWing.setAttribute('fill', 'url(#enemyWingGradient)');
+            enemy.appendChild(leftWing);
+
+            const rightWing = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            rightWing.setAttribute('d', 'M20,0 L40,20 L10,20 Z');
+            rightWing.setAttribute('fill', 'url(#enemyWingGradient)');
+            enemy.appendChild(rightWing);
+
+            const cockpit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            cockpit.setAttribute('cx', '0');
+            cockpit.setAttribute('cy', '-10');
+            cockpit.setAttribute('r', '5');
+            cockpit.setAttribute('fill', 'url(#enemyCockpitGradient)');
+            enemy.appendChild(cockpit);
+
+            enemiesGroup.appendChild(enemy);
+            enemies.push({ element: enemy, x, y, speed: Math.random() * 2 + 1 });
+        }
+
+        // Create laser
+        function createLaser() {
+            const laser = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            laser.setAttribute('x', playerX - 1);
+            laser.setAttribute('y', playerY - 30);
+            laser.setAttribute('width', '2');
+            laser.setAttribute('height', '20');
+            laser.setAttribute('fill', '#00FFFF');
+            lasersGroup.appendChild(laser);
+            lasers.push({ element: laser, x: playerX, y: playerY - 30 });
+        }
+
+        // Create explosion
+        function createExplosion(x, y) {
+            const explosion = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            explosion.setAttribute('cx', x);
+            explosion.setAttribute('cy', y);
+            explosion.setAttribute('r', '1');
+            explosion.setAttribute('fill', 'url(#explosionGradient)');
+            explosion.setAttribute('filter', 'url(#explosionBlur)');
+            explosionsGroup.appendChild(explosion);
+            explosions.push({ element: explosion, x, y, size: 1, opacity: 1 });
+        }
+
+        // Update game state
+        function updateGame() {
+            // Move player
+            if (keys.ArrowLeft && playerX > 0) playerX -= playerSpeed;
+            if (keys.ArrowRight && playerX < 1000) playerX += playerSpeed;
+            if (keys.ArrowUp && playerY > 0) playerY -= playerSpeed;
+            if (keys.ArrowDown && playerY < 1000) playerY += playerSpeed;
+            playerUFO.setAttribute('transform', `translate(${playerX},${playerY})`);
+
+            // Move lasers
+            lasers.forEach((laser, index) => {
+                laser.y -= 10 * gameSpeed;
+                laser.element.setAttribute('y', laser.y);
+                if (laser.y < -20) {
+                    lasersGroup.removeChild(laser.element);
+                    lasers.splice(index, 1);
+                }
+            });
+
+            // Move enemies
+            enemies.forEach((enemy, index) => {
+                enemy.y += enemy.speed * gameSpeed;
+                enemy.element.setAttribute('transform', `translate(${enemy.x},${enemy.y})`);
+                if (enemy.y > 1050) {
+                    enemiesGroup.removeChild(enemy.element);
+                    enemies.splice(index, 1);
+                }
+                // Check collision with player
+                if (Math.abs(enemy.x - playerX) < 30 && Math.abs(enemy.y - playerY) < 30 && !stealthMode) {
+                    health -= 10;
+                    healthDisplay.textContent = `HEALTH ${health}`;
+                    createExplosion(enemy.x, enemy.y);
+                    enemiesGroup.removeChild(enemy.element);
+                    enemies.splice(index, 1);
+                    if (health <= 0) {
+                        alert('Game Over! Your score: ' + score);
+                        resetGame();
+                    }
+                }
+            });
+
+            // Check laser-enemy collisions
+            lasers.forEach((laser, laserIndex) => {
+                enemies.forEach((enemy, enemyIndex) => {
+                    if (Math.abs(laser.x - enemy.x) < 20 && Math.abs(laser.y - enemy.y) < 20) {
+                        score += 10;
+                        scoreDisplay.textContent = `SCORE ${score}`;
+                        createExplosion(enemy.x, enemy.y);
+                        enemiesGroup.removeChild(enemy.element);
+                        enemies.splice(enemyIndex, 1);
+                        lasersGroup.removeChild(laser.element);
+                        lasers.splice(laserIndex, 1);
+                    }
+                });
+            });
+
+            // Update explosions
+            explosions.forEach((explosion, index) => {
+                explosion.size += 2;
+                explosion.opacity -= 0.05;
+                explosion.element.setAttribute('r', explosion.size);
+                explosion.element.setAttribute('opacity', explosion.opacity);
+                if (explosion.opacity <= 0) {
+                    explosionsGroup.removeChild(explosion.element);
+                    explosions.splice(index, 1);
+                }
+            });
+
+            // Move stars and solar systems
+            stars.forEach(star => {
+                let y = parseFloat(star.getAttribute('cy'));
+                y += 1 * gameSpeed;
+                if (y > 1000) y = 0;
+                star.setAttribute('cy', y);
+            });
+
+            solarSystems.forEach(system => {
+                system.y += 1 * gameSpeed;
+                if (system.y > 1200) system.y = -200;
+                system.element.setAttribute('transform', `translate(${system.x},${system.y})`);
+            });
+
+            // Spawn new enemies
+            if (Math.random() < 0.02) createEnemy();
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (gameStarted) {
+                updateGame();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Reset game
+        function resetGame() {
+            score = 0;
+            health = 100;
+            playerX = 500;
+            playerY = 800;
+            gameSpeed = 1;
+            stealthMode = false;
+            lasers = [];
+            enemies = [];
+            explosions = [];
+
+            scoreDisplay.textContent = 'SCORE 0';
+            healthDisplay.textContent = 'HEALTH 100';
+            playerUFO.setAttribute('transform', `translate(${playerX},${playerY})`);
+
+            while (lasersGroup.firstChild) lasersGroup.removeChild(lasersGroup.firstChild);
+            while (enemiesGroup.firstChild) enemiesGroup.removeChild(enemiesGroup.firstChild);
+            while (explosionsGroup.firstChild) explosionsGroup.removeChild(explosionsGroup.firstChild);
+        }
+
+        // Key events
+        const keys = {};
+        document.addEventListener('keydown', e => {
+            keys[e.code] = true;
+            if (e.code === 'Space') createLaser();
+        });
+        document.addEventListener('keyup', e => keys[e.code] = false);
+
+        // Button events
+        document.getElementById('upButton').addEventListener('mousedown', () => keys.ArrowUp = true);
+        document.getElementById('upButton').addEventListener('mouseup', () => keys.ArrowUp = false);
+        document.getElementById('downButton').addEventListener('mousedown', () => keys.ArrowDown = true);
+        document.getElementById('downButton').addEventListener('mouseup', () => keys.ArrowDown = false);
+        document.getElementById('leftButton').addEventListener('mousedown', () => keys.ArrowLeft = true);
+        document.getElementById('leftButton').addEventListener('mouseup', () => keys.ArrowLeft = false);
+        document.getElementById('rightButton').addEventListener('mousedown', () => keys.ArrowRight = true);
+        document.getElementById('rightButton').addEventListener('mouseup', () => keys.ArrowRight = false);
+        document.getElementById('laserButton').addEventListener('click', createLaser);
+        document.getElementById('speedButton').addEventListener('click', () => {
+            gameSpeed = gameSpeed === 1 ? 2 : 1;
+            document.getElementById('speedButton').textContent = gameSpeed === 1 ? '🚀' : '🐢';
+        });
+        document.getElementById('stealthButton').addEventListener('click', () => {
+            stealthMode = !stealthMode;
+            playerUFO.style.opacity = stealthMode ? '0.5' : '1';
+        });
+        document.getElementById('resetButton').addEventListener('click', resetGame);
+        document.getElementById('expandButton').addEventListener('click', () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                document.documentElement.requestFullscreen();
+            }
+        });
+
+        // Start button event
+        startButton.addEventListener('click', () => {
+            gameStarted = true;
+            startPage.style.display = 'none';
+            initGame();
+        });
+    </script>
+</body>
+</html>
