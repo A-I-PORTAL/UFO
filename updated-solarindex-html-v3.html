@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar System Game</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        #gameArea {
+            width: 100%;
+            height: 100%;
+        }
+        #speedControl {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        #speedBtn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(to bottom, #4a89dc, #2a69bc);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <svg id="gameArea" viewBox="0 0 1000 1000">
+            <defs>
+                <radialGradient id="sunGradient">
+                    <stop offset="0%" stop-color="#FFD700"></stop>
+                    <stop offset="50%" stop-color="#FFA500"></stop>
+                    <stop offset="100%" stop-color="#FF8C00"></stop>
+                </radialGradient>
+                <radialGradient id="earthGradient">
+                    <stop offset="0%" stop-color="#4b66ad"></stop>
+                    <stop offset="60%" stop-color="#84b6d9"></stop>
+                    <stop offset="100%" stop-color="#b7d9e8"></stop>
+                </radialGradient>
+                <radialGradient id="jupiterGradient">
+                    <stop offset="0%" stop-color="#b76e2e"></stop>
+                    <stop offset="33%" stop-color="#e3b168"></stop>
+                    <stop offset="66%" stop-color="#f0d082"></stop>
+                    <stop offset="100%" stop-color="#f4e4b5"></stop>
+                </radialGradient>
+                <radialGradient id="marsGradient">
+                    <stop offset="0%" stop-color="#8c3b1a"></stop>
+                    <stop offset="50%" stop-color="#b9522b"></stop>
+                    <stop offset="100%" stop-color="#e37547"></stop>
+                </radialGradient>
+                <radialGradient id="moonGradient">
+                    <stop offset="0%" stop-color="#d0d0d0"></stop>
+                    <stop offset="50%" stop-color="#a0a0a0"></stop>
+                    <stop offset="100%" stop-color="#808080"></stop>
+                </radialGradient>
+            </defs>
+            <g id="solarSystems"></g>
+        </svg>
+        <div id="speedControl">
+            <button id="speedBtn"></button>
+        </div>
+    </div>
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const solarSystems = document.getElementById('solarSystems');
+        const speedBtn = document.getElementById('speedBtn');
+
+        let speed = 1;
+        const maxSolarSystems = 5;
+        let activeSolarSystems = [];
+
+        const centerX = 500;
+        const centerY = 500;
+        const spawnRadius = 50;
+
+        function createSolarSystem() {
+            const system = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            const baseSize = Math.random() * 1.5 + 0.5; // Random base size between 0.5 and 2
+
+            const sun = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            const sunSize = 50 * baseSize;
+            sun.setAttribute("r", sunSize);
+            sun.setAttribute("fill", "url(#sunGradient)");
+            system.appendChild(sun);
+
+            const planets = [];
+            const planetCount = Math.floor(Math.random() * 4) + 1;
+            for (let i = 0; i < planetCount; i++) {
+                const planetGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                const planet = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                const planetSize = (Math.random() * 10 + 5) * baseSize;
+                planet.setAttribute("r", planetSize);
+                planet.setAttribute("fill", `url(#${['earthGradient', 'jupiterGradient', 'marsGradient'][Math.floor(Math.random() * 3)]})`);
+                const distance = sunSize + planetSize + (i + 1) * 60 * baseSize;
+                planetGroup.appendChild(planet);
+
+                const moons = [];
+                const moonCount = Math.floor(Math.random() * 3);
+                for (let j = 0; j < moonCount; j++) {
+                    const moonGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    const moon = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    const moonSize = (Math.random() * 2 + 1) * baseSize;
+                    moon.setAttribute("r", moonSize);
+                    moon.setAttribute("fill", "url(#moonGradient)");
+                    const moonDistance = planetSize + moonSize + (j + 1) * 15 * baseSize;
+                    moonGroup.appendChild(moon);
+                    planetGroup.appendChild(moonGroup);
+
+                    moons.push({
+                        element: moonGroup,
+                        distance: moonDistance,
+                        speed: (Math.random() * 0.02 + 0.01) * (Math.random() < 0.5 ? 1 : -1),
+                        angle: Math.random() * Math.PI * 2
+                    });
+                }
+
+                system.appendChild(planetGroup);
+
+                planets.push({
+                    element: planetGroup,
+                    distance: distance,
+                    speed: (Math.random() * 0.01 + 0.005) * (Math.random() < 0.5 ? 1 : -1),
+                    angle: Math.random() * Math.PI * 2,
+                    moons: moons
+                });
+            }
+
+            const angle = Math.random() * Math.PI * 2;
+            const x = centerX + Math.cos(angle) * spawnRadius;
+            const y = centerY + Math.sin(angle) * spawnRadius;
+            system.setAttribute("transform", `translate(${x},${y}) scale(0.1)`);
+            system.style.opacity = "0";
+            solarSystems.appendChild(system);
+
+            return {
+                element: system,
+                x: x,
+                y: y,
+                angle: angle,
+                fadeInProgress: 0,
+                baseSize: baseSize,
+                planets: planets
+            };
+        }
+
+        function updateSolarSystems() {
+            activeSolarSystems.forEach((system, index) => {
+                const dx = system.x - centerX;
+                const dy = system.y - centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Move the system
+                system.x += dx * 0.005 * speed;
+                system.y += dy * 0.005 * speed;
+
+                // Calculate scale based on distance and base size
+                const scale = Math.min(1, Math.max(0.1, distance / 500)) * system.baseSize;
+
+                // Update planets and moons
+                system.planets.forEach(planet => {
+                    planet.angle += planet.speed * speed;
+                    const planetX = Math.cos(planet.angle) * planet.distance;
+                    const planetY = Math.sin(planet.angle) * planet.distance;
+                    planet.element.setAttribute("transform", `translate(${planetX},${planetY})`);
+
+                    planet.moons.forEach(moon => {
+                        moon.angle += moon.speed * speed;
+                        const moonX = Math.cos(moon.angle) * moon.distance;
+                        const moonY = Math.sin(moon.angle) * moon.distance;
+                        moon.element.setAttribute("transform", `translate(${moonX},${moonY})`);
+                    });
+                });
+
+                // Update transform
+                system.element.setAttribute("transform", `translate(${system.x},${system.y}) scale(${scale})`);
+
+                // Fade in effect
+                if (system.fadeInProgress < 1) {
+                    system.fadeInProgress += 0.05;
+                    system.element.style.opacity = Math.min(1, system.fadeInProgress);
+                }
+
+                // Remove if out of bounds
+                if (distance > 800) {
+                    solarSystems.removeChild(system.element);
+                    activeSolarSystems.splice(index, 1);
+                }
+            });
+
+            // Spawn new solar systems less frequently
+            if (activeSolarSystems.length < maxSolarSystems && Math.random() < 0.005) {
+                activeSolarSystems.push(createSolarSystem());
+            }
+
+            requestAnimationFrame(updateSolarSystems);
+        }
+
+        speedBtn.addEventListener('mousedown', () => {
+            speed = 5;
+        });
+
+        speedBtn.addEventListener('mouseup', () => {
+            speed = 1;
+        });
+
+        updateSolarSystems();
+    </script>
+</body>
+</html>
