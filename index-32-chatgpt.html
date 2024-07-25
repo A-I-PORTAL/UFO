@@ -1,0 +1,503 @@
+Sure, here is the complete code for `index-31.html` with all the modifications included:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFO Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            color: white;
+            font-family: 'Arial', sans-serif;
+        }
+        svg {
+            display: block;
+        }
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        #startTitle {
+            font-family: 'Arial', sans-serif;
+            font-size: 48px;
+            color: aqua;
+            margin-bottom: 20px;
+        }
+        #story, #controls {
+            font-family: 'Arial', sans-serif;
+            font-size: 18px;
+            color: white;
+            max-width: 800px;
+            text-align: center;
+            margin: 20px auto;
+        }
+        #startButton {
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            color: black;
+            background-color: aqua;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .icon {
+            font-size: 48px;
+            position: absolute;
+        }
+    </style>
+</head>
+<body>
+    <div id="startScreen">
+        <h1 id="startTitle">UFO</h1>
+        <p id="story">
+            You've escaped your repressive planet of evil aliens who have enslaved every star system in the galaxy. A lone hero, you explore the universe in search of developing civilizations to share your innovative technology with, in the hopes of empowering the universe. But the minions of your planet's overlords relentlessly hunt you down in an effort to thwart your good deeds. Can you survive long enough to save the universe and put an end to your planet's tyranny?
+        </p>
+        <p id="controls">
+            CONTROLS<br>
+            Arrow keys or on-screen arrows: Move UFO<br>
+            Space or Laser button: Fire laser<br>
+            Speed button: Adjust travel speed<br>
+            Stealth button: Toggle stealth mode<br>
+            Reset button: Restart game<br>
+            Expand button: Toggle fullscreen
+        </p>
+        <button id="startButton">START</button>
+        <div class="icon" style="top: 10%; left: 10%;">🛸</div>
+        <div class="icon" style="top: 20%; right: 15%;">👽</div>
+        <div class="icon" style="bottom: 15%; left: 20%;">🌠</div>
+        <div class="icon" style="bottom: 25%; right: 25%;">🪐</div>
+    </div>
+    <svg id="gameArea" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+        <g id="starsGroup"></g>
+        <g id="solarSystemsGroup"></g>
+        <g id="gameObjectsGroup"></g>
+        <g id="enemiesGroup"></g>
+    </svg>
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const starsGroup = document.getElementById('starsGroup');
+        const solarSystemsGroup = document.getElementById('solarSystemsGroup');
+        const gameObjectsGroup = document.getElementById('gameObjectsGroup');
+        const enemiesGroup = document.getElementById('enemiesGroup');
+
+        const viewBox = gameArea.viewBox.baseVal;
+        viewBox.width = window.innerWidth;
+        viewBox.height = window.innerHeight;
+
+        const stars = [];
+        const solarSystems = [];
+        const asteroids = [];
+        const enemies = [];
+
+        let playerX = viewBox.width / 2;
+        let playerY = viewBox.height / 2;
+        let starSpeedX = 0;
+        let starSpeedY = 1;
+        let gameActive = false;
+        let isStealthMode = false;
+        let health = 100;
+        let score = 0;
+
+        document.getElementById('startButton').addEventListener('click', startGame);
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            gameActive = true;
+            updateGame();
+        }
+
+        function updateGame() {
+            if (!gameActive) return;
+
+            const viewBox = gameArea.viewBox.baseVal;
+
+            // Update stars
+            updateStars();
+
+            // Update solar systems
+            updateSolarSystems();
+
+            // Update asteroids
+            updateAsteroids();
+
+            // Update enemies
+            updateEnemies();
+
+            // Update UFO position
+            updateUFOPosition();
+
+            // Update lasers
+            updateLasers();
+
+            // Update explosions
+            updateExplosions();
+
+            if (Math.random() < 0.001 && enemies.length < 3) {
+                createEnemy();
+            }
+
+            if (health <= 0) {
+                gameOver();
+            }
+
+            requestAnimationFrame(updateGame);
+        }
+
+        function updateStars() {
+            for (let i = stars.length - 1; i >= 0; i--) {
+                const star = stars[i];
+                star.z -= starSpeedY;
+                star.x -= starSpeedX;
+
+                if (star.z <= 0 || star.z > 1000 || Math.abs(star.x) > 1000 || Math.abs(star.y) > 1000) {
+                    starsGroup.removeChild(star.element);
+                    stars.splice(i, 1);
+                    stars.push(createStar());
+                } else {
+                    const scale = 500 / star.z;
+                    const x = star.x * scale + viewBox.width / 2;
+                    const y = star.y * scale + viewBox.height / 2;
+                    
+                    star.element.setAttribute('cx', x);
+                    star.element.setAttribute('cy', y);
+                    star.element.setAttribute('r', Math.max(0.1, scale));
+                }
+            }
+        }
+
+        function updateSolarSystems() {
+            for (let i = solarSystems.length - 1; i >= 0; i--) {
+                const system = solarSystems[i];
+                system.z -= starSpeedY;
+                system.x -= starSpeedX;
+
+                if (system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 2) {
+                    solarSystemsGroup.removeChild(system.element);
+                    solarSystems.splice(i, 1);
+                    solarSystems.push(createSolarSystem());
+                } else {
+                    const scale = 500 / system.z;
+                    const x = system.x * scale + viewBox.width / 2;
+                    const y = system.y * scale + viewBox.height / 2;
+                    
+                    system.element.setAttribute('transform', `translate(${x}, ${y}) scale(${scale * 20})`);
+
+                    // Update planets
+                    system.planets.forEach(planet => {
+                        planet.orbitAngle += planet.orbitSpeed;
+                        const planetX = Math.cos(planet.orbitAngle) * planet.orbitRadius;
+                        const planetY = Math.sin(planet.orbitAngle) * planet.orbitRadius;
+                        planet.element.setAttribute('transform', `translate(${planetX}, ${planetY})`);
+
+                        // Update moons
+                        planet.moons.forEach(moon => {
+                            moon.angle += moon.speed;
+                            const moonX = Math.cos(moon.angle) * moon.distance;
+                            const moonY = Math.sin(moon.angle) * moon.distance;
+                            moon.element.setAttribute('cx', moonX);
+                            moon.element.setAttribute('cy', moonY);
+                        });
+
+                        // Check if player visited the planet
+                        const dx = x + planetX - playerX;
+                        const dy = y + planetY - playerY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < 20000 * scale && !planet.visited && !isStealthMode) {
+                            planet.visited = true;
+                            planet.glow.setAttribute('opacity', '0.8');
+                            score += 10;
+                            updateScoreDisplay();
+                        }
+                    });
+                }
+            }
+        }
+
+        function updateAsteroids() {
+            for (let i = asteroids.length - 1; i >= 0; i--) {
+                const asteroid = asteroids[i];
+                asteroid.z -= starSpeedY * 1.5;
+                asteroid.x -= starSpeedX * 1.5;
+
+                if (asteroid.z <= 0 || asteroid.z > 1000 || Math.abs(asteroid.x) > 1000 || Math.abs(asteroid.y) > 1000) {
+                    gameObjectsGroup.removeChild(asteroid.element);
+                    gameObjectsGroup.removeChild(asteroid.tail);
+                    asteroid.sparkles.forEach(sparkle => gameObjectsGroup.removeChild(sparkle));
+                    asteroids.splice(i, 1);
+                    asteroids.push(createAsteroid());
+                } else {
+                    const scale = 500 / asteroid.z;
+                    const x = asteroid.x * scale + viewBox.width / 2;
+                    const y = asteroid.y * scale + viewBox.height / 2;
+                    
+                    asteroid.element
+
+.setAttribute('transform', `translate(${x}, ${y}) scale(${scale * 0.2})`);
+                    asteroid.tail.setAttribute('transform', `translate(${x}, ${y}) scale(${scale * 0.1})`);
+                    
+                    asteroid.sparkles.forEach((sparkle, index) => {
+                        const angle = index * 0.8 * Math.PI + asteroid.z * 0.1;
+                        const sparkleX = x + Math.cos(angle) * scale * 5;
+                        const sparkleY = y + Math.sin(angle) * scale * 5;
+                        sparkle.setAttribute('transform', `translate(${sparkleX}, ${sparkleY}) scale(${scale * 0.05})`);
+                    });
+
+                    // Check collision with UFO
+                    const dx = x - playerX;
+                    const dy = y - playerY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < 200 * scale) {
+                        asteroid.exploding = true;
+                        asteroid.explosionProgress = 0;
+                        health -= 10;
+                        updateHealthDisplay();
+                        createExplosion(x, y);
+                    }
+                }
+            }
+        }
+
+        function updateEnemies() {
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                enemy.z -= starSpeedY;
+                enemy.x -= starSpeedX;
+
+                if (enemy.z <= 0 || enemy.z > 1000 || Math.abs(enemy.x) > 1000 || Math.abs(enemy.y) > 1000) {
+                    enemiesGroup.removeChild(enemy.element);
+                    enemies.splice(i, 1);
+                    enemies.push(createEnemy());
+                } else {
+                    const scale = 500 / enemy.z;
+                    const x = enemy.x * scale + viewBox.width / 2;
+                    const y = enemy.y * scale + viewBox.height / 2;
+
+                    enemy.element.setAttribute('transform', `translate(${x}, ${y}) scale(${scale * 0.5})`);
+
+                    // Check collision with UFO
+                    const dx = x - playerX;
+                    const dy = y - playerY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < 200 * scale) {
+                        health -= 20;
+                        updateHealthDisplay();
+                        createExplosion(x, y);
+                    }
+
+                    // Shoot laser at UFO
+                    if (Math.random() < 0.01) {
+                        shootLaser(enemy);
+                    }
+                }
+            }
+        }
+
+        function createStar() {
+            const star = {
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                z: Math.random() * 1000,
+                element: document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+            };
+
+            star.element.setAttribute('fill', 'white');
+            starsGroup.appendChild(star.element);
+            return star;
+        }
+
+        function createSolarSystem() {
+            const solarSystem = {
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                z: Math.random() * SOLAR_SYSTEM_SPAWN_DISTANCE,
+                planets: [],
+                element: document.createElementNS('http://www.w3.org/2000/svg', 'g')
+            };
+
+            const numPlanets = Math.floor(Math.random() * 3) + 2;
+            for (let i = 0; i < numPlanets; i++) {
+                const planet = createPlanet(solarSystem);
+                solarSystem.planets.push(planet);
+                solarSystem.element.appendChild(planet.element);
+                solarSystem.element.appendChild(planet.glow);
+                planet.moons.forEach(moon => solarSystem.element.appendChild(moon.element));
+            }
+
+            solarSystemsGroup.appendChild(solarSystem.element);
+            return solarSystem;
+        }
+
+        function createPlanet(solarSystem) {
+            const planet = {
+                orbitRadius: Math.random() * 200 + 50,
+                orbitSpeed: Math.random() * 0.01 + 0.01,
+                orbitAngle: Math.random() * Math.PI * 2,
+                visited: false,
+                moons: [],
+                element: document.createElementNS('http://www.w3.org/2000/svg', 'circle'),
+                glow: document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+            };
+
+            planet.element.setAttribute('r', Math.random() * 20 + 10);
+            planet.element.setAttribute('fill', 'blue');
+            planet.glow.setAttribute('r', planet.element.getAttribute('r'));
+            planet.glow.setAttribute('fill', 'yellow');
+            planet.glow.setAttribute('opacity', '0');
+
+            const numMoons = Math.floor(Math.random() * 3);
+            for (let i = 0; i < numMoons; i++) {
+                const moon = createMoon(planet);
+                planet.moons.push(moon);
+                planet.element.appendChild(moon.element);
+            }
+
+            return planet;
+        }
+
+        function createMoon(planet) {
+            const moon = {
+                distance: Math.random() * 30 + 10,
+                speed: Math.random() * 0.02 + 0.01,
+                angle: Math.random() * Math.PI * 2,
+                element: document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+            };
+
+            moon.element.setAttribute('r', Math.random() * 5 + 2);
+            moon.element.setAttribute('fill', 'gray');
+
+            return moon;
+        }
+
+        function createAsteroid() {
+            const asteroid = {
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                z: Math.random() * 1000,
+                element: document.createElementNS('http://www.w3.org/2000/svg', 'g'),
+                tail: document.createElementNS('http://www.w3.org/2000/svg', 'path'),
+                sparkles: []
+            };
+
+            const shape = Math.random() < 0.5 ? 'circle' : 'rect';
+            if (shape === 'circle') {
+                asteroid.element = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                asteroid.element.setAttribute('r', Math.random() * 30 + 10);
+            } else {
+                asteroid.element = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                asteroid.element.setAttribute('width', Math.random() * 60 + 20);
+                asteroid.element.setAttribute('height', Math.random() * 60 + 20);
+            }
+
+            asteroid.element.setAttribute('fill', 'brown');
+            gameObjectsGroup.appendChild(asteroid.element);
+
+            asteroid.tail.setAttribute('d', 'M0,0 Q-20,-10 -40,-20 T-80,-40');
+            asteroid.tail.setAttribute('stroke', 'red');
+            asteroid.tail.setAttribute('stroke-width', '2');
+            asteroid.tail.setAttribute('fill', 'none');
+            gameObjectsGroup.appendChild(asteroid.tail);
+
+            for (let i = 0; i < 5; i++) {
+                const sparkle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                sparkle.setAttribute('r', Math.random() * 3);
+                sparkle.setAttribute('fill', 'white');
+                gameObjectsGroup.appendChild(sparkle);
+                asteroid.sparkles.push(sparkle);
+            }
+
+            return asteroid;
+        }
+
+        function createEnemy() {
+            const enemy = {
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                z: Math.random() * 1000,
+                element: document.createElementNS('http://www.w3.org/2000/svg', 'g')
+            };
+
+            const shape = Math.random() < 0.5 ? 'circle' : 'rect';
+            if (shape === 'circle') {
+                enemy.element = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                enemy.element.setAttribute('r', Math.random() * 30 + 10);
+            } else {
+                enemy.element = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                enemy.element.setAttribute('width', Math.random() * 60 + 20);
+                enemy.element.setAttribute('height', Math.random() * 60 + 20);
+            }
+
+            enemy.element.setAttribute('fill', 'red');
+            enemiesGroup.appendChild(enemy.element);
+            return enemy;
+        }
+
+        function shootLaser(enemy) {
+            const laser = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            laser.setAttribute('x1', enemy.x);
+            laser.setAttribute('y1', enemy.y);
+            laser.setAttribute('x2', playerX);
+            laser.setAttribute('y2', playerY);
+            laser.setAttribute('stroke', 'red');
+            laser.setAttribute('stroke-width', '2');
+            gameObjectsGroup.appendChild(laser);
+
+            setTimeout(() => gameObjectsGroup.removeChild(laser), 500);
+
+            // Check collision with UFO
+            const dx = playerX - enemy.x;
+            const dy = playerY - enemy.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < 200) {
+                health -= 10;
+                updateHealthDisplay();
+                createExplosion(playerX, playerY);
+           
+
+ }
+        }
+
+        function createExplosion(x, y) {
+            const explosion = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            explosion.setAttribute('cx', x);
+            explosion.setAttribute('cy', y);
+            explosion.setAttribute('r', 50);
+            explosion.setAttribute('fill', 'orange');
+            explosion.setAttribute('opacity', '0.8');
+            gameObjectsGroup.appendChild(explosion);
+
+            setTimeout(() => gameObjectsGroup.removeChild(explosion), 500);
+        }
+
+        function updateHealthDisplay() {
+            healthDisplay.textContent = `Health: ${health}`;
+        }
+
+        function gameLoop() {
+            updatePlayer();
+            updateStars();
+            updateSolarSystems();
+            updateAsteroids();
+            updateEnemies();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
