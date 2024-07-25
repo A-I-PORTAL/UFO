@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Adventure Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: black;
+        }
+        svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        #startScreen {
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        #startTitle {
+            font-family: 'Arial', sans-serif;
+            font-size: 48px;
+            color: aqua;
+            margin-bottom: 20px;
+        }
+        #story, #controls {
+            font-family: 'Arial', sans-serif;
+            font-size: 18px;
+            color: white;
+            max-width: 800px;
+            text-align: center;
+            margin: 20px auto;
+        }
+        #startButton {
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            color: black;
+            background-color: aqua;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .icon {
+            font-size: 48px;
+            position: absolute;
+        }
+    </style>
+</head>
+<body>
+    <div id="startScreen">
+        <h1 id="startTitle">UFO</h1>
+        <p id="story">
+            You've escaped your repressive planet of evil aliens who have enslaved every star system in the galaxy. A lone hero, you explore the universe in search of developing civilizations to share your innovative technology with, in the hopes of empowering the universe. But the minions of your planet's overlords relentlessly hunt you down in an effort to thwart your good deeds. Can you survive long enough to save the universe and put an end to your planet's tyranny?
+        </p>
+        <p id="controls">
+            CONTROLS<br>
+            Arrow keys or on-screen arrows: Move UFO<br>
+            Space or Laser button: Fire laser<br>
+            Speed button: Adjust travel speed<br>
+            Stealth button: Toggle stealth mode<br>
+            Reset button: Restart game<br>
+            Expand button: Toggle fullscreen
+        </p>
+        <button id="startButton">START</button>
+        <div class="icon" style="top: 10%; left: 10%;">🛸</div>
+        <div class="icon" style="top: 20%; right: 15%;">👽</div>
+        <div class="icon" style="bottom: 15%; left: 20%;">🌠</div>
+        <div class="icon" style="bottom: 25%; right: 25%;">🪐</div>
+    </div>
+    <svg id="gameCanvas" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+        <g id="stars"></g>
+        <g id="solarSystems"></g>
+        <g id="asteroids"></g>
+        <g id="enemies"></g>
+        <g id="ufo"></g>
+        <g id="gameObjects"></g>
+        <text id="healthDisplay" x="10" y="30" fill="white">Health: 100</text>
+    </svg>
+
+    <script>
+        const stars = [];
+        const solarSystems = [];
+        const asteroids = [];
+        const enemies = [];
+        let playerX = 0;
+        let playerY = 0;
+        let health = 100;
+        let gameActive = false;
+        let isStealthMode = false;
+
+        const starsGroup = document.getElementById('stars');
+        const solarSystemsGroup = document.getElementById('solarSystems');
+        const asteroidsGroup = document.getElementById('asteroids');
+        const enemiesGroup = document.getElementById('enemies');
+        const gameObjectsGroup = document.getElementById('gameObjects');
+        const healthDisplay = document.getElementById('healthDisplay');
+        const viewBox = document.getElementById('gameCanvas').viewBox.baseVal;
+
+        const SUN_RADIUS = 16000 * 20;
+        const ORBIT_RADIUS = 80000 * 20;
+        const SOLAR_SYSTEM_SPAWN_DISTANCE = 1000000 * 20;
+
+        document.getElementById('startButton').addEventListener('click', () => {
+            document.getElementById('startScreen').style.display = 'none';
+            initGame();
+            gameActive = true;
+            gameLoop();
+        });
+
+        function initGame() {
+            for (let i = 0; i < 100; i++) stars.push(createStar());
+            for (let i = 0; i < 5; i++) solarSystems.push(createSolarSystem());
+            for (let i = 0; i < 10; i++) asteroids.push(createAsteroid());
+            for (let i = 0; i < 5; i++) enemies.push(createEnemy());
+            updateHealthDisplay();
+        }
+
+        function createStar() {
+            const star = {
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                z: Math.random() * 1000,
+                element: document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+            };
+            star.element.setAttribute('fill', 'white');
+            starsGroup.appendChild(star.element);
+            return star;
+        }
+
+        function createSolarSystem() {
+            const x = Math.random() * 2000 - 1000;
+            const y = Math.random() * 2000 - 1000;
+            const z = Math.random() * SOLAR_SYSTEM_SPAWN_DISTANCE + SOLAR_SYSTEM_SPAWN_DISTANCE;
+
+            const solarSystem = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            const sun = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            sun.setAttribute("r", SUN_RADIUS * 20); // Increased size
+            sun.setAttribute("fill", "yellow");
+            solarSystem.appendChild(sun);
+
+            const planets = [];
+            for (let i = 0; i < 3; i++) {
+                planets.push(createPlanet('terrestrial', Math.random() * ORBIT_RADIUS, Math.random() * 0.05));
+            }
+            planets.forEach(planet => solarSystem.appendChild(planet.element));
+
+            solarSystemsGroup.appendChild(solarSystem);
+            return { element: solarSystem, x, y, z, sun, planets };
+        }
+
+        function createPlanet(type, orbitRadius, orbitSpeed) {
+            const planet = {
+                orbitRadius,
+                orbitSpeed,
+                orbitAngle: Math.random() * 2 * Math.PI,
+                visited: false,
+                element: document.createElementNS("http://www.w3.org/2000/svg", "g"),
+                moons: []
+            };
+
+            const planetBody = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            planetBody.setAttribute("r", 8000 * 20); // Increased size
+            planetBody.setAttribute("fill", "blue");
+            planet.element.appendChild(planetBody);
+
+            const glow = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            glow.setAttribute("r", 9000 * 20); // Increased size
+            glow.setAttribute("fill", "none");
+            glow.setAttribute("stroke", "cyan");
+            glow.setAttribute("stroke-width", "5");
+            glow.setAttribute("opacity", "0");
+            planet.element.appendChild(glow);
+            planet.glow = glow;
+
+            for (let i = 0; i < 2; i++) {
+                planet.moons.push(createMoon());
+            }
+            planet.moons.forEach(moon => planet.element.appendChild(moon.element));
+
+            return planet;
+        }
+
+        function createMoon() {
+            const moon = {
+                distance: Math.random() * 3000 + 1000,
+                angle: Math.random() * 2 * Math.PI,
+                speed: Math.random() * 0.1,
+                element: document.createElementNS("http://www.w3.org/2000/svg", "circle")
+            };
+            moon.element.setAttribute("r", 500);
+            moon.element.setAttribute("fill", "gray");
+            return moon;
+        }
+
+        function createAsteroid() {
+            const asteroid = {
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                z: Math.random() * 1000,
+                element: document.createElementNS('http://www.w3.org/2000/svg', 'circle'),
+                tail: document.createElementNS('http://www.w3.org/2000/svg', 'line'),
+                sparkles: []
+            };
+            asteroid.element.setAttribute('fill', 'brown');
+            asteroid.tail.setAttribute('stroke', 'yellow');
+            asteroid.tail.setAttribute('stroke-width', 5);
+            for (let i = 0; i < 5; i++) {
+                const sparkle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                sparkle.setAttribute('fill', 'orange');
+                sparkle.setAttribute('r', 2);
+                asteroid.sparkles.push(sparkle);
+                asteroidsGroup.appendChild(sparkle);
+            }
+            asteroidsGroup.appendChild(asteroid.element);
+            asteroidsGroup.appendChild(asteroid.tail);
+            return asteroid;
+        }
+
+        function createEnemy() {
+            const enemy = {
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                z: Math.random() * 1000,
+                element: document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+            };
+            enemy.element.setAttribute('fill', 'red');
+            enemiesGroup.appendChild(enemy.element);
+            return enemy;
+        }
+
+        function updatePlayer() {
+            viewBox.x = playerX - viewBox.width / 2;
+            viewBox.y = playerY - viewBox.height / 2;
+            updateHealthDisplay();
+        }
+
+        function updateHealthDisplay() {
+            healthDisplay.textContent = `Health: ${health}`;
+        }
+
+        function updateStars() {
+            stars.forEach(star => {
+                star.z -= 10;
+                if (star.z <= 0) star.z += 1000;
+                const scale = 500 / star.z;
+                const x = (star.x - playerX) * scale + 400;
+                const y = (star.y - playerY) * scale + 300;
+                star.element.setAttribute('cx', x);
+                star.element.setAttribute('cy', y);
+                star.element.setAttribute('r', scale * 2);
+            });
+        }
+
+        function updateSolarSystems() {
+            solarSystems.forEach(solarSystem => {
+                solarSystem.z -= 10;
+                if (solarSystem.z <= 0) solarSystem.z += SOLAR_SYSTEM_SPAWN_DISTANCE;
+                const scale = 500 / solarSystem.z;
+                const x = (solarSystem.x - playerX) * scale + 400;
+                const y = (solarSystem.y - playerY) * scale + 300;
+                solarSystem.element.setAttribute('transform', `translate(${x}, ${y}) scale(${scale})`);
+                solarSystem.planets.forEach(planet => {
+                    planet.orbitAngle += planet.orbitSpeed;
+                    const planetX = Math.cos(planet.orbitAngle) * planet.orbitRadius;
+                    const planetY = Math.sin(planet.orbitAngle) * planet.orbitRadius;
+                    planet.element.setAttribute('transform', `translate(${planetX}, ${planetY})`);
+                    planet.moons.forEach(moon => {
+                        moon.angle += moon.speed;
+                        const moonX = planetX + Math.cos(moon.angle) * moon.distance;
+                        const moonY = planetY + Math.sin(moon.angle) * moon.distance;
+                        moon.element.setAttribute('cx', moonX);
+                        moon.element.setAttribute('cy', moonY);
+                    });
+                });
+            });
+        }
+
+        function updateAsteroids() {
+            asteroids.forEach(asteroid => {
+                asteroid.z -= 10;
+                if (asteroid.z <= 0) asteroid.z += 1000;
+                const scale = 500 / asteroid.z;
+                const x = (asteroid.x - playerX) * scale + 400;
+                const y = (asteroid.y - playerY) * scale + 300;
+                asteroid.element.setAttribute('cx', x);
+                asteroid.element.setAttribute('cy', y);
+                asteroid.element.setAttribute('r', scale * 5);
+                asteroid.tail.setAttribute('x1', x);
+                asteroid.tail.setAttribute('y1', y);
+                asteroid.tail.setAttribute('x2', x + scale * 20);
+                asteroid.tail.setAttribute('y2', y + scale * 20);
+                asteroid.sparkles.forEach((sparkle, index) => {
+                    sparkle.setAttribute('cx', x + Math.random() * scale * 40 - scale * 20);
+                    sparkle.setAttribute('cy', y + Math.random() * scale * 40 - scale * 20);
+                    sparkle.setAttribute('r', scale * (index + 1));
+                });
+            });
+        }
+
+        function updateEnemies() {
+            enemies.forEach(enemy => {
+                enemy.z -= 10;
+                if (enemy.z <= 0) enemy.z += 1000;
+                const scale = 500 / enemy.z;
+                const x = (enemy.x - playerX) * scale + 400;
+                const y = (enemy.y - playerY) * scale + 300;
+                enemy.element.setAttribute('cx', x);
+                enemy.element.setAttribute('cy', y);
+                enemy.element.setAttribute('r', scale * 5);
+            });
+        }
+
+        function gameLoop() {
+            if (gameActive) {
+                updatePlayer();
+                updateStars();
+                updateSolarSystems();
+                updateAsteroids();
+                updateEnemies();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+    </script>
+</body>
+</html>
