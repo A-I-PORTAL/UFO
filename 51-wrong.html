@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Game</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100vmin;
+            height: 100vmin;
+        }
+        #gameArea {
+            width: 100%;
+            height: 100%;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+        }
+        #controls button {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #controls button:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        #controls button:active {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        #speedContainer, #stealthContainer, #laserContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #speedBar, #stealthBar, #laserBar {
+            width: 100%;
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        #speedFill, #stealthFill, #laserFill {
+            height: 100%;
+            width: 0%;
+            background-color: #00ff00;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <svg id="gameArea" viewBox="0 0 1000 1000">
+            <defs>
+                <radialGradient id="sunGradient">
+                    <stop offset="0%" stop-color="#FFD700"></stop>
+                    <stop offset="50%" stop-color="#FFA500"></stop>
+                    <stop offset="100%" stop-color="#FF8C00"></stop>
+                </radialGradient>
+                <radialGradient id="earthGradient">
+                    <stop offset="0%" stop-color="#4b66ad"></stop>
+                    <stop offset="60%" stop-color="#84b6d9"></stop>
+                    <stop offset="100%" stop-color="#b7d9e8"></stop>
+                </radialGradient>
+                <radialGradient id="jupiterGradient">
+                    <stop offset="0%" stop-color="#b76e2e"></stop>
+                    <stop offset="33%" stop-color="#e3b168"></stop>
+                    <stop offset="66%" stop-color="#f0d082"></stop>
+                    <stop offset="100%" stop-color="#f4e4b5"></stop>
+                </radialGradient>
+                <radialGradient id="marsGradient">
+                    <stop offset="0%" stop-color="#8c3b1a"></stop>
+                    <stop offset="50%" stop-color="#b9522b"></stop>
+                    <stop offset="100%" stop-color="#e37547"></stop>
+                </radialGradient>
+                <radialGradient id="moonGradient">
+                    <stop offset="0%" stop-color="#d0d0d0"></stop>
+                    <stop offset="50%" stop-color="#a0a0a0"></stop>
+                    <stop offset="100%" stop-color="#808080"></stop>
+                </radialGradient>
+                <linearGradient id="ufoBodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#e0e0e0"></stop>
+                    <stop offset="50%" stop-color="#b0b0b0"></stop>
+                    <stop offset="100%" stop-color="#909090"></stop>
+                </linearGradient>
+                <linearGradient id="ufoDomeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#00ffff" stop-opacity="0.5"></stop>
+                    <stop offset="100%" stop-color="#00ffff" stop-opacity="0.3"></stop>
+                </linearGradient>
+                <linearGradient id="ufoRingGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ffffff"></stop>
+                    <stop offset="50%" stop-color="#c0c0c0"></stop>
+                    <stop offset="100%" stop-color="#a0a0a0"></stop>
+                </linearGradient>
+            </defs>
+            <g id="stars"></g>
+            <g id="solarSystems"></g>
+            <g id="lasers"></g>
+            <g id="playerUFO" transform="translate(500,800)">
+                <!-- UFO Body -->
+                <ellipse cx="0" cy="0" rx="40" ry="12" fill="url(#ufoBodyGradient)"></ellipse>
+                <!-- UFO Dome -->
+                <ellipse cx="0" cy="-5" rx="25" ry="10" fill="url(#ufoDomeGradient)"></ellipse>
+                <!-- UFO Interior Floor (enlarged) -->
+                <ellipse cx="0" cy="-2" rx="20" ry="6" fill="#404040" opacity="0.6"></ellipse>
+                <!-- UFO Rings -->
+                <path d="M-40,0 A40,12 0 0,0 40,0" fill="none" stroke="url(#ufoRingGradient)" stroke-width="3"></path>
+                <path d="M-38,0 A38,11 0 0,0 38,0" fill="none" stroke="#00ffff" stroke-width="1"></path>
+                <!-- UFO Dome Reflection -->
+                <path d="M-20,-10 Q0,-15 20,-10" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.6"></path>
+                <!-- UFO Bottom Light -->
+                <ellipse cx="0" cy="2" rx="5" ry="2" fill="#80ffff" opacity="0.6"></ellipse>
+            </g>
+        </svg>
+        <div id="controls">
+            <div id="stealthContainer">
+                <div id="stealthBar"><div id="stealthFill"></div></div>
+            </div>
+            <button id="upButton">↑</button>
+            <div id="speedContainer">
+                <div id="speedBar"><div id="speedFill"></div></div>
+            </div>
+            <button id="leftButton">←</button>
+            <div id="laserContainer">
+                <div id="laserBar"><div id="laserFill"></div></div>
+            </div>
+            <button id="rightButton">→</button>
+            <button id="downButton">↓</button>
+        </div>
+    </div>
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const playerUFO = document.getElementById('playerUFO');
+        const starsGroup = document.getElementById('stars');
+        const solarSystemsGroup = document.getElementById('solarSystems');
+        const lasersGroup = document.getElementById('lasers');
+        const speedFill = document.getElementById('speedFill');
+        const stealthFill = document.getElementById('stealthFill');
+        const laserFill = document.getElementById('laserFill');
+
+        let playerX = 500;
+        let playerY = 800;
+        let speed = 0;
+        const maxSpeed = 5;
+        let stealth = 100;
+        let laser = 100;
+        const starCount = 100;
+        const solarSystemCount = 5;
+        const stars = [];
+        const solarSystems = [];
+
+        function createStar() {
+            const star = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            star.setAttribute("r", Math.random() * 1.5 + 0.5);
+            star.setAttribute("fill", "white");
+            resetStarPosition(star);
+            starsGroup.appendChild(star);
+            return star;
+        }
+
+        function resetStarPosition(star) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * 500 + 1;
+            star.setAttribute("cx", Math.cos(angle) * distance + 500);
+            star.setAttribute("cy", Math.sin(angle) * distance + 500);
+            star.initialX = parseFloat(star.getAttribute("cx"));
+            star.initialY = parseFloat(star.getAttribute("cy"));
+        }
+
+        function createSolarSystem() {
+            const solarSystem = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            const sun = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            sun.setAttribute("r", Math.random() * 5 + 5);
+            sun.setAttribute("fill", "url(#sunGradient)");
+            solarSystem.appendChild(sun);
+
+            const planetCount = Math.floor(Math.random() * 3) + 1;
+            for (let i = 0; i < planetCount; i++) {
+                const planet = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                planet.setAttribute("r", Math.random() * 3 + 2);
+                planet.setAttribute("fill", `url(#${['earthGradient', 'jupiterGradient', 'marsGradient'][Math.floor(Math.random() * 3)]})`);
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.random() * 30 + 20;
+                planet.setAttribute("cx", Math.cos(angle) * distance);
+                planet.setAttribute("cy", Math.sin(angle) * distance);
+                solarSystem.appendChild(planet);
+
+                if (Math.random() < 0.5) {
+                    const moon = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    moon.setAttribute("r", Math.random() * 1 + 0.5);
+                    moon.setAttribute("fill", "url(#moonGradient)");
+                    const moonAngle = Math.random() * Math.PI * 2;
+                    const moonDistance = Math.random() * 5 + 5;
+                    moon.setAttribute("cx", parseFloat(planet.getAttribute("cx")) + Math.cos(moonAngle) * moonDistance);
+                    moon.setAttribute("cy", parseFloat(planet.getAttribute("cy")) + Math.sin(moonAngle) * moonDistance);
+                    solarSystem.appendChild(moon);
+                }
+            }
+
+            resetSolarSystemPosition(solarSystem);
+            solarSystemsGroup.appendChild(solarSystem);
+            return solarSystem;
+        }
+
+        function resetSolarSystemPosition(solarSystem) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * 500 + 1;
+            solarSystem.setAttribute("transform", `translate(${Math.cos(angle) * distance + 500}, ${Math.sin(angle) * distance + 500})`);
+            solarSystem.initialX = Math.cos(angle) * distance + 500;
+            solarSystem.initialY = Math.sin(angle) * distance + 500;
+        }
+
+        for (let i = 0; i < starCount; i++) {
+            stars.push(createStar());
+        }
+
+        for (let i = 0; i < solarSystemCount; i++) {
+            solarSystems.push(createSolarSystem());
+        }
+
+        function updateStarPositions() {
+            const centerX = 500;
+            const centerY = 500;
+            stars.forEach(star => {
+                const dx = parseFloat(star.getAttribute("cx")) - centerX;
+                const dy = parseFloat(star.getAttribute("cy")) - centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx);
+
+                let newDistance;
+                if (speed > 0) {
+                    newDistance = distance + speed * 2;
+                    if (newDistance > 500) {
+                        resetStarPosition(star);
+                        return;
+                    }
+                } else {
+                    newDistance = distance + speed;
+                    if (newDistance < 0) {
+                        resetStarPosition(star);
+                        return;
+                    }
+                }
+
+                const newX = centerX + Math.cos(angle) * newDistance;
+                const newY = centerY + Math.sin(angle) * newDistance;
+                star.setAttribute("cx", newX);
+                star.setAttribute("cy", newY);
+            });
+        }
+
+        function updateSolarSystemPositions() {
+            const centerX = 500;
+            const centerY = 500;
+            solarSystems.forEach(solarSystem => {
+                const transform = solarSystem.getAttribute("transform");
+                const match = transform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+                if (match) {
+                    const currentX = parseFloat(match[1]);
+                    const currentY = parseFloat(match[2]);
+                    const dx = currentX - centerX;
+                    const dy = currentY - centerY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const angle = Math.atan2(dy, dx);
+
+                    let newDistance;
+                    if (speed > 0) {
+                        newDistance = distance + speed * 2;
+                        if (newDistance > 500) {
+                            resetSolarSystemPosition(solarSystem);
+                            return;
+                        }
+                    } else {
+                        newDistance = distance + speed;
+                        if (newDistance < 0) {
+                            resetSolarSystemPosition(solarSystem);
+                            return;
+                        }
+                    }
+
+                    const newX = centerX + Math.cos(angle) * newDistance;
+                    const newY = centerY + Math.sin(angle) * newDistance;
+                    const scale = 1 + (newDistance - distance) / 500;
+                    solarSystem.setAttribute("transform", 
+                        `translate(${newX}, ${newY}) scale(${scale})`);
+                }
+            });
+        }
+
+        function updatePlayerPosition() {
+            playerX = Math.max(0, Math.min(1000, playerX));
+            playerY = Math.max(0, Math.min(1000, playerY));
+            playerUFO.setAttribute("transform", `translate(${playerX},${playerY})`);
+        }
+
+        function updateSpeed(change) {
+            speed = Math.max(-maxSpeed, Math.min(maxSpeed, speed + change));
+            speedFill.style.width = `${Math.abs(speed) / maxSpeed * 100}%`;
+            speedFill.style.backgroundColor = speed >= 0 ? "#00ff00" : "#ff0000";
+        }
+
+        function updateStealth(change) {
+            stealth = Math.max(0, Math.min(100, stealth + change));
+            stealthFill.style.width = `${stealth}%`;
+        }
+
+        function updateLaser(change) {
+            laser = Math.max(0, Math.min(100, laser + change));
+            laserFill.style.width = `${laser}%`;
+        }
+
+        function fireLaser() {
+            if (laser >= 10) {
+                const laserBeam = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                laserBeam.setAttribute("x1", playerX);
+                laserBeam.setAttribute("y1", playerY);
+                laserBeam.setAttribute("x2", playerX);
+                laserBeam.setAttribute("y2", playerY - 1000);
+                laserBeam.setAttribute("stroke", "#ff00ff");
+                laserBeam.setAttribute("stroke-width", "2");
+                lasersGroup.appendChild(laserBeam);
+                updateLaser(-10);
+
+                setTimeout(() => {
+                    lasersGroup.removeChild(laserBeam);
+                }, 500);
+            }
+        }
+
+        document.addEventListener('keydown', (event) => {
+            switch (event.key) {
+                case 'ArrowUp':
+                    playerY -= 5;
+                    break;
+                case 'ArrowDown':
+                    playerY += 5;
+                    break;
+                case 'ArrowLeft':
+                    playerX -= 5;
+                    break;
+                case 'ArrowRight':
+                    playerX += 5;
+                    break;
+                case 'w':
+                    updateSpeed(0.1);
+                    break;
+                case 's':
+                    updateSpeed(-0.1);
+                    break;
+                case ' ':
+                    fireLaser();
+                    break;
+            }
+            updatePlayerPosition();
+        });
+
+        document.getElementById('upButton').addEventListener('click', () => {
+            playerY -= 5;
+            updatePlayerPosition();
+        });
+
+        document.getElementById('downButton').addEventListener('click', () => {
+            playerY += 5;
+            updatePlayerPosition();
+        });
+
+        document.getElementById('leftButton').addEventListener('click', () => {
+            playerX -= 5;
+            updatePlayerPosition();
+        });
+
+        document.getElementById('rightButton').addEventListener('click', () => {
+            playerX += 5;
+            updatePlayerPosition();
+        });
+
+        let lastTime = 0;
+        function gameLoop(currentTime) {
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+
+            updateStarPositions();
+            updateSolarSystemPositions();
+            updateStealth(0.1);
+            updateLaser(0.1);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
