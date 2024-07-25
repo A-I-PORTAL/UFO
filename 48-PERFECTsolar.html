@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improved Solar System Game with Gradual Scaling</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        #gameArea {
+            width: 100%;
+            height: 100%;
+        }
+        #speedControl {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        #speedBtn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(to bottom, #4a89dc, #2a69bc);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <svg id="gameArea" viewBox="0 0 1000 1000">
+            <defs>
+                <radialGradient id="sunGradient">
+                    <stop offset="0%" stop-color="#FFD700"></stop>
+                    <stop offset="50%" stop-color="#FFA500"></stop>
+                    <stop offset="100%" stop-color="#FF8C00"></stop>
+                </radialGradient>
+                <radialGradient id="earthGradient">
+                    <stop offset="0%" stop-color="#4b66ad"></stop>
+                    <stop offset="60%" stop-color="#84b6d9"></stop>
+                    <stop offset="100%" stop-color="#b7d9e8"></stop>
+                </radialGradient>
+                <radialGradient id="jupiterGradient">
+                    <stop offset="0%" stop-color="#b76e2e"></stop>
+                    <stop offset="33%" stop-color="#e3b168"></stop>
+                    <stop offset="66%" stop-color="#f0d082"></stop>
+                    <stop offset="100%" stop-color="#f4e4b5"></stop>
+                </radialGradient>
+                <radialGradient id="marsGradient">
+                    <stop offset="0%" stop-color="#8c3b1a"></stop>
+                    <stop offset="50%" stop-color="#b9522b"></stop>
+                    <stop offset="100%" stop-color="#e37547"></stop>
+                </radialGradient>
+                <radialGradient id="moonGradient">
+                    <stop offset="0%" stop-color="#d0d0d0"></stop>
+                    <stop offset="50%" stop-color="#a0a0a0"></stop>
+                    <stop offset="100%" stop-color="#808080"></stop>
+                </radialGradient>
+            </defs>
+            <g id="stars"></g>
+            <g id="solarSystems"></g>
+        </svg>
+        <div id="speedControl">
+            <button id="speedBtn"></button>
+        </div>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const starsGroup = document.getElementById('stars');
+        const solarSystemsGroup = document.getElementById('solarSystems');
+        const speedControl = document.getElementById('speedControl');
+        const speedBtn = document.getElementById('speedBtn');
+
+        const stars = [];
+        const solarSystems = [];
+        const starCount = 200;
+        const solarSystemCount = 1;
+        let speed = 1;
+        const MAX_SPEED = 5;
+
+        const SUN_RADIUS = 80;
+        const ORBIT_RADIUS = 400;
+        const SOLAR_SYSTEM_SPAWN_DISTANCE = 5000;
+        const SOLAR_SYSTEM_MAX_SCALE = 50;
+        const planetTypes = ['earth', 'jupiter', 'mars'];
+
+        function createStar() {
+            const star = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            star.setAttribute('fill', '#ffffff');
+            starsGroup.appendChild(star);
+
+            return {
+                element: star,
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                z: Math.random() * 1000 + 1
+            };
+        }
+
+        function createSolarSystem() {
+            const solarSystem = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            solarSystemsGroup.appendChild(solarSystem);
+
+            const sun = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            sun.setAttribute("r", SUN_RADIUS);
+            sun.setAttribute("fill", "url(#sunGradient)");
+            solarSystem.appendChild(sun);
+
+            const planets = [];
+            for (let i = 0; i < 3; i++) {
+                const planet = createPlanet(planetTypes[i], ORBIT_RADIUS * (0.5 + i * 0.25), 0.001 / (0.5 + i * 0.25));
+                solarSystem.appendChild(planet.element);
+                planets.push(planet);
+            }
+
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * SOLAR_SYSTEM_SPAWN_DISTANCE * 0.2 + SOLAR_SYSTEM_SPAWN_DISTANCE * 0.8;
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+            const z = SOLAR_SYSTEM_SPAWN_DISTANCE;
+
+            return {
+                element: solarSystem,
+                x: x,
+                y: y,
+                z: z,
+                planets: planets,
+                scale: 1,
+                opacity: 0
+            };
+        }
+
+        function createPlanet(type, orbitRadius, orbitSpeed) {
+            const planet = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            
+            const planetBody = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            planetBody.setAttribute("r", 40);
+            planetBody.setAttribute("fill", `url(#${type}Gradient)`);
+            planet.appendChild(planetBody);
+
+            const moonCount = Math.floor(Math.random() * 3) + 1;
+            const moons = [];
+            for (let i = 0; i < moonCount; i++) {
+                const moon = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                moon.setAttribute("r", 5 + Math.random() * 5);
+                moon.setAttribute("fill", "url(#moonGradient)");
+                planet.appendChild(moon);
+                moons.push({
+                    element: moon,
+                    angle: Math.random() * Math.PI * 2,
+                    distance: 60 + Math.random() * 30,
+                    speed: (Math.random() * 0.02 + 0.01) * (Math.random() < 0.5 ? 1 : -1)
+                });
+            }
+
+            return {
+                element: planet,
+                orbitAngle: Math.random() * Math.PI * 2,
+                orbitRadius: orbitRadius,
+                orbitSpeed: orbitSpeed,
+                moons: moons
+            };
+        }
+
+        function updateGame() {
+            const viewBox = gameArea.viewBox.baseVal;
+
+            // Update stars
+            stars.forEach(star => {
+                star.z -= speed;
+                if (star.z <= 0) star.z += 1000;
+                
+                const scale = 500 / star.z;
+                const x = star.x * scale + viewBox.width / 2;
+                const y = star.y * scale + viewBox.height / 2;
+                
+                star.element.setAttribute('cx', x);
+                star.element.setAttribute('cy', y);
+                star.element.setAttribute('r', Math.max(0.1, scale));
+            });
+
+            // Update solar systems
+            solarSystems.forEach((system, index) => {
+                system.z -= speed * 10;  // Maintain relative speed to stars
+                
+                // Calculate the progress of the solar system's journey
+                const progress = 1 - (system.z / SOLAR_SYSTEM_SPAWN_DISTANCE);
+                
+                // Gradually increase the scale based on progress
+                system.scale = 1 + (SOLAR_SYSTEM_MAX_SCALE - 1) * progress;
+
+                if (system.z <= 0) {
+                    // Respawn the solar system
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.random() * SOLAR_SYSTEM_SPAWN_DISTANCE * 0.2 + SOLAR_SYSTEM_SPAWN_DISTANCE * 0.8;
+                    system.x = Math.cos(angle) * distance;
+                    system.y = Math.sin(angle) * distance;
+                    system.z = SOLAR_SYSTEM_SPAWN_DISTANCE;
+                    system.opacity = 0;
+                    system.scale = 1;
+                }
+
+                const scale = 500 / system.z;
+                const x = system.x * scale + viewBox.width / 2;
+                const y = system.y * scale + viewBox.height / 2;
+
+                // Fade-in effect
+                if (system.opacity < 1) {
+                    system.opacity += 0.02;
+                }
+
+                system.element.setAttribute('transform', `translate(${x}, ${y}) scale(${scale * system.scale})`);
+                system.element.setAttribute('opacity', system.opacity);
+
+                // Update planets
+                system.planets.forEach(planet => {
+                    planet.orbitAngle += planet.orbitSpeed;
+                    const planetX = Math.cos(planet.orbitAngle) * planet.orbitRadius;
+                    const planetY = Math.sin(planet.orbitAngle) * planet.orbitRadius;
+                    planet.element.setAttribute('transform', `translate(${planetX}, ${planetY})`);
+
+                    // Update moons
+                    planet.moons.forEach(moon => {
+                        moon.angle += moon.speed;
+                        const moonX = Math.cos(moon.angle) * moon.distance;
+                        const moonY = Math.sin(moon.angle) * moon.distance;
+                        moon.element.setAttribute('cx', moonX);
+                        moon.element.setAttribute('cy', moonY);
+                    });
+                });
+            });
+
+            requestAnimationFrame(updateGame);
+        }
+
+        function updateStarSpeed(e) {
+            const rect = speedControl.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const dx = e.clientX - centerX;
+            const dy = e.clientY - centerY;
+
+            const maxRadius = speedControl.offsetWidth / 2 - speedBtn.offsetWidth / 2;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+
+            const clampedDistance = Math.min(distance, maxRadius);
+            const buttonX = Math.cos(angle) * clampedDistance;
+            const buttonY = Math.sin(angle) * clampedDistance;
+
+            speedBtn.style.transform = `translate(${buttonX}px, ${buttonY}px)`;
+
+            speed = (clampedDistance / maxRadius) * MAX_SPEED;
+        }
+
+        function resetSpeedButton() {
+            speedBtn.style.transform = 'translate(-50%, -50%)';
+            speed = 1;
+        }
+
+        function setupSpeedControl() {
+            let isDragging = false;
+
+            speedBtn.addEventListener('mousedown', startDrag);
+            speedBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                startDrag(e.touches[0]);
+            });
+
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', (e) => {
+                if (isDragging) {
+                    e.preventDefault();
+                    drag(e.touches[0]);
+                }
+            });
+
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+
+            function startDrag(e) {
+                isDragging = true;
+                updateStarSpeed(e);
+            }
+
+            function drag(e) {
+                if (isDragging) {
+                    updateStarSpeed(e);
+                }
+            }
+
+            function endDrag() {
+                isDragging = false;
+                resetSpeedButton();
+            }
+        }
+
+        // Initialize stars
+        for (let i = 0; i < starCount; i++) {
+            stars.push(createStar());
+        }
+
+        // Initialize solar systems
+        for (let i = 0; i < solarSystemCount; i++) {
+            solarSystems.push(createSolarSystem());
+        }
+
+        // Setup speed control
+        setupSpeedControl();
+
+        // Start the game
+        updateGame();
+    </script>
+</body>
+</html>
