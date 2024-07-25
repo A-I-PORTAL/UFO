@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar System Explorer Game</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        #gameArea {
+            width: 100%;
+            height: 100%;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            gap: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+        }
+        #controls div {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            user-select: none;
+            border-radius: 5px;
+        }
+        #controls div:active {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        #speedContainer, #stealthContainer, #laserContainer {
+            position: relative;
+        }
+        #speedMeter, #stealthMeter, #laserMeter {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background-color: #00ff00;
+        }
+        .status-display {
+            position: absolute;
+            top: 10px;
+            width: 120px;
+            height: 40px;
+            background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
+            color: white;
+            font-size: 18px;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 20px;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        }
+        #score { left: 10px; }
+        #health { right: 10px; }
+        .game-btn {
+            position: absolute;
+            bottom: 20px;
+            width: 80px;
+            height: 40px;
+            font-size: 16px;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        }
+        #resetBtn {
+            left: 20px;
+            background: linear-gradient(to bottom, #f0ad4e, #d08b2c);
+        }
+        #fullscreenBtn {
+            right: 20px;
+            background: linear-gradient(to bottom, #5bc0de, #3b9cbd);
+        }
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #startScreen h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        #startScreen p {
+            font-size: 18px;
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        #startBtn {
+            font-size: 24px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <svg id="gameArea" viewBox="0 0 1000 1000">
+            <defs>
+                <radialGradient id="sunGradient">
+                    <stop offset="0%" stop-color="#FFD700"></stop>
+                    <stop offset="50%" stop-color="#FFA500"></stop>
+                    <stop offset="100%" stop-color="#FF8C00"></stop>
+                </radialGradient>
+                <radialGradient id="earthGradient">
+                    <stop offset="0%" stop-color="#4b66ad"></stop>
+                    <stop offset="60%" stop-color="#84b6d9"></stop>
+                    <stop offset="100%" stop-color="#b7d9e8"></stop>
+                </radialGradient>
+                <radialGradient id="jupiterGradient">
+                    <stop offset="0%" stop-color="#b76e2e"></stop>
+                    <stop offset="33%" stop-color="#e3b168"></stop>
+                    <stop offset="66%" stop-color="#f0d082"></stop>
+                    <stop offset="100%" stop-color="#f4e4b5"></stop>
+                </radialGradient>
+                <radialGradient id="marsGradient">
+                    <stop offset="0%" stop-color="#8c3b1a"></stop>
+                    <stop offset="50%" stop-color="#b9522b"></stop>
+                    <stop offset="100%" stop-color="#e37547"></stop>
+                </radialGradient>
+                <radialGradient id="moonGradient">
+                    <stop offset="0%" stop-color="#d0d0d0"></stop>
+                    <stop offset="50%" stop-color="#a0a0a0"></stop>
+                    <stop offset="100%" stop-color="#808080"></stop>
+                </radialGradient>
+                <radialGradient id="asteroidGradient">
+                    <stop offset="0%" stop-color="#A0A0A0" />
+                    <stop offset="50%" stop-color="#808080" />
+                    <stop offset="100%" stop-color="#606060" />
+                </radialGradient>
+                <filter id="fuzzyEdge">
+                    <feGaussianBlur stdDeviation="3" />
+                </filter>
+                <linearGradient id="enemyBodyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#800000" />
+                    <stop offset="50%" stop-color="#600000" />
+                    <stop offset="100%" stop-color="#400000" />
+                </linearGradient>
+                <linearGradient id="enemyWingGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#a00000" />
+                    <stop offset="50%" stop-color="#800000" />
+                    <stop offset="100%" stop-color="#600000" />
+                </linearGradient>
+                <linearGradient id="enemyCockpitGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#ff6666" />
+                    <stop offset="50%" stop-color="#ff3333" />
+                    <stop offset="100%" stop-color="#ff0000" />
+                </linearGradient>
+                <linearGradient id="ufoBodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#e0e0e0" />
+                    <stop offset="50%" stop-color="#b0b0b0" />
+                    <stop offset="100%" stop-color="#909090" />
+                </linearGradient>
+                <linearGradient id="ufoDomeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#00ffff" stop-opacity="0.5" />
+                    <stop offset="100%" stop-color="#00ffff" stop-opacity="0.3" />
+                </linearGradient>
+                <linearGradient id="ufoRingGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ffffff" />
+                    <stop offset="50%" stop-color="#c0c0c0" />
+                    <stop offset="100%" stop-color="#a0a0a0" />
+                </linearGradient>
+                <radialGradient id="explosionGradient">
+                    <stop offset="0%" stop-color="#FFFF00" />
+                    <stop offset="25%" stop-color="#FF8C00" />
+                    <stop offset="50%" stop-color="#FF4500" />
+                    <stop offset="75%" stop-color="#8B0000" />
+                    <stop offset="100%" stop-color="rgba(0,0,0,0)" />
+                </radialGradient>
+                <filter id="explosionBlur">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="10" />
+                </filter>
+            </defs>
+            <g id="stars"></g>
+            <g id="solarSystems"></g>
+            <g id="asteroids"></g>
+            <g id="enemies"></g>
+            <g id="lasers"></g>
+            <g id="explosions"></g>
+            <g id="playerUFO" transform="translate(500,800)">
+                <!-- UFO Body -->
+                <ellipse cx="0" cy="0" rx="40" ry="12" fill="url(#ufoBodyGradient)" />
+                <!-- UFO Dome -->
+                <ellipse cx="0" cy="-5" rx="25" ry="10" fill="url(#ufoDomeGradient)" />
+                <!-- UFO Interior Floor (enlarged) -->
+                <ellipse cx="0" cy="-2" rx="20" ry="6" fill="#404040" opacity="0.6" />
+                <!-- UFO Rings -->
+                <path d="M-40,0 A40,12 0 0,0 40,0" fill="none" stroke="url(#ufoRingGradient)" stroke-width="3" />
+                <path d="M-38,0 A38,11 0 0,0 38,0" fill="none" stroke="#00ffff" stroke-width="1" />
+                <!-- UFO Dome Reflection -->
+                <path d="M-20,-10 Q0,-15 20,-10" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.6" />
+                <!-- UFO Bottom Light -->
+                <ellipse cx="0" cy="2" rx="5" ry="2" fill="#80ffff" opacity="0.6" />
+            </g>
+        </svg>
+        <div id="controls">
+            <div id="stealthContainer">
+                <div id="stealthMeter"></div>
+            </div>
+            <div>↑</div>
+            <div id="speedContainer">
+                <div id="speedMeter"></div>
+            </div>
+            <div>←</div>
+            <div id="laserContainer">
+                <div id="laserMeter"></div>
+            </div>
+            <div>→</div>
+            <div></div>
+            <div>↓</div>
+            <div></div>
+        </div>
+        <div id="score" class="status-display">SCORE 0</div>
+        <div id="health" class="status-display">HEALTH 100</div>
+        <button id="resetBtn" class="game-btn">RESET</button>
+        <button id="fullscreenBtn" class="game-btn">EXPAND</button>
+    </div>
+    <div id="startScreen">
+        <h1>Solar System Explorer</h1>
+        <p>You've escaped your repressive planet of evil aliens who have enslaved every star system in the galaxy. A lone hero, you explore the universe in search of developing civilizations to share your innovative technology with, in the hopes of empowering the universe. But the minions of your planet's overlords relentlessly hunt you down in an effort to thwart your good deeds. Can you survive long enough to save the universe and put an end to your planet's tyranny?</p>
+        <button id="startBtn">START</button>
+    </div>
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const gameContainer = document.getElementById('gameContainer');
+        const starsGroup = document.getElementById('stars');
+        const solarSystemsGroup = document.getElementById('solarSystems');
+        const asteroidsGroup = document.getElementById('asteroids');
+        const enemiesGroup = document.getElementById('enemies');
+        const lasersGroup = document.getElementById('lasers');
+        const explosionsGroup = document.getElementById('explosions');
+        const playerUFO = document.getElementById('playerUFO');
+        const speedMeter = document.getElementById('speedMeter');
+        const stealthMeter = document.getElementById('stealthMeter');
+        const laserMeter = document.getElementById('laserMeter');
+        const scoreDisplay = document.getElementById('score');
+        const healthDisplay = document.getElementById('health');
+        const resetBtn = document.getElementById('resetBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const startScreen = document.getElementById('startScreen');
+        const startBtn = document.getElementById('startBtn');
+
+        const stars = [];
+        const solarSystems = [];
+        const asteroids = [];
+        const enemies = [];
+        const lasers = [];
+        const explosions = [];
+        const planetTypes = ['earth', 'jupiter', 'mars'];
+
+        let playerX = 500;
+        let playerY = 800;
+        let score = 0;
+        let health = 100;
+        let speed = 1;
+        let stealth = 100;
+        let laserCharge = 100;
+        let isStealthMode = false;
+        let isFiring = false;
+        let gameActive = false;
+
+        const STAR_COUNT = 200;
+        const MAX_SOLAR_SYSTEMS = 3;
+        const MAX_ASTEROIDS = 5;
+        const MAX_ENEMIES = 3;
+        const SOLAR_SYSTEM_SPAWN_DISTANCE = 5000;
+        const SUN_RADIUS = 80;
+        const ORBIT_RADIUS = 400;
+
+        function createStar() {
+            const star = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            star.setAttribute("r", Math.random() * 1.5 + 0.5);
+            star.setAttribute("fill", "white");
+            starsGroup.appendChild(star);
+            return {
+                element: star,
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                z: Math.random() * 1000
+            };
+        }
+
+        function createSolarSystem() {
+            const system = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            solarSystemsGroup.appendChild(system);
+
+            const sun = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            sun.setAttribute("r", SUN_RADIUS);
+            sun.setAttribute("fill", "url(#sunGradient)");
+            sun.setAttribute("filter", "url(#fuzzyEdge)");
+            system.appendChild(sun);
+
+            const planets = [];
+            for (let i = 0; i < 3; i++) {
+                const planet = createPlanet(planetTypes[i], ORBIT_RADIUS * (0.5 + i * 0.25), 0.001 / (0.5 + i * 0.25));
+                system.appendChild(planet.element);
+                planets.push(planet);
+            }
+
+            const angle = Math.random() * Math.PI * 2;
+            const x = Math.cos(angle) * SOLAR_SYSTEM_SPAWN_DISTANCE;
+            const y = Math.sin(angle) * SOLAR_SYSTEM_SPAWN_DISTANCE;
+            const z = Math.random() * SOLAR_SYSTEM_SPAWN_DISTANCE + SOLAR_SYSTEM_SPAWN_DISTANCE;
+
+            return {
+                element: system,
+                x: x,
+                y: y,
+                z: z,
+                sun: sun,
+                planets: planets
+            };
+        }
+
+        function createPlanet(type, orbitRadius, orbitSpeed) {
+            const planet = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            
+            const planetBody = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            planetBody.setAttribute("r", 40);
+            planetBody.setAttribute("fill", `url(#${type}Gradient)`);
+            planet.appendChild(planetBody);
+
+            const glow = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            glow.setAttribute("r", 45);
+            glow.setAttribute("fill", "none");
+            glow.setAttribute("stroke", "aqua");
+            glow.setAttribute("stroke-width", "2");
+            glow.setAttribute("opacity", "0");
+            planet.appendChild(glow);
+
+            const moonCount = Math.floor(Math.random() * 3) + 1;
+            const moons = [];
+            for (let i = 0; i < moonCount; i++) {
+                const moon = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                moon.setAttribute("r", 5 + Math.random() * 5);
+                moon.setAttribute("fill", "url(#moonGradient)");
+                planet.appendChild(moon);
+                moons.push({
+                    element: moon,
+                    angle: Math.random() * Math.PI * 2,
+                    distance: 60 + Math.random() * 30,
+                    speed: (Math.random() * 0.02 + 0.01) * (Math.random() < 0.5 ? 1 : -1)
+                });
+            }
+
+            return {
+                element: planet,
+                glow: glow,
+                orbitAngle: Math.random() * Math.PI * 2,
+                orbitRadius: orbitRadius,
+                orbitSpeed: orbitSpeed,
+                moons: moons,
+                visited: false
+            };
+        }
+
+        function createAsteroid() {
+            const asteroid = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            asteroid.setAttribute("r", 10);
+            asteroid.setAttribute("fill", "url(#asteroidGradient)");
+            asteroid.setAttribute("filter", "url(#fuzzyEdge)");
+            asteroidsGroup.appendChild(asteroid);
+
+            const tail = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            tail.setAttribute("fill", "url(#asteroidGradient)");
+            tail.setAttribute("filter", "url(#fuzzyEdge)");
+            asteroidsGroup.appendChild(tail);
+
+            const sparkles = [];
+            for (let i = 0; i < 5; i++) {
+                const sparkle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                sparkle.setAttribute("r", Math.random() * 1 + 0.5);
+                sparkle.setAttribute("fill", "white");
+                sparkle.style.opacity = Math.random() * 0.7 + 0.3;
+                asteroidsGroup.appendChild(sparkle);
+                sparkles.push(sparkle);
+            }
+
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * 500 + 500;
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+
+            return {
+                element: asteroid,
+                tail: tail,
+                sparkles: sparkles,
+                x: x,
+                y: y,
+                z: 1000
+            };
+        }
+
+        function createEnemy() {
+            const enemy = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            
+            // Enemy Body
+            const body = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            body.setAttribute("d", "M-30,0 C-30,-15 30,-15 30,0 C30,15 -30,15 -30,0 Z");
+            body.setAttribute("fill", "url(#enemyBodyGradient)");
+            enemy.appendChild(body);
+
+            // Enemy Wings
+            const wings = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            wings.setAttribute("d", "M-30,0 L-45,-10 L-40,5 L-30,0 M30,0 L45,-10 L40,5 L30,0");
+            wings.setAttribute("fill", "url(#enemyWingGradient)");
+            enemy.appendChild(wings);
+
+            // Enemy Cockpit
+            const cockpit = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+            cockpit.setAttribute("cx", "0");
+            cockpit.setAttribute("cy", "-5");
+            cockpit.setAttribute("rx", "15");
+            cockpit.setAttribute("ry", "8");
+            cockpit.setAttribute("fill", "url(#enemyCockpitGradient)");
+            enemy.appendChild(cockpit);
+
+            // Enemy Engines
+            const leftEngine = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+            leftEngine.setAttribute("cx", "-20");
+            leftEngine.setAttribute("cy", "5");
+            leftEngine.setAttribute("rx", "5");
+            leftEngine.setAttribute("ry", "3");
+            leftEngine.setAttribute("fill", "#ff6600");
+            enemy.appendChild(leftEngine);
+
+            const rightEngine = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+            rightEngine.setAttribute("cx", "20");
+            rightEngine.setAttribute("cy", "5");
+            rightEngine.setAttribute("rx", "5");
+            rightEngine.setAttribute("ry", "3");
+            rightEngine.setAttribute("fill", "#ff6600");
+            enemy.appendChild(rightEngine);
+
+            // Shading for 3D effect
+            const shading = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            shading.setAttribute("d", "M-30,0 C-30,-15 30,-15 30,0 L15,0 C15,-7 -15,-7 -15,0 Z");
+            shading.setAttribute("fill", "#400000");
+            shading.setAttribute("opacity", "0.3");
+            enemy.appendChild(shading);
+
+            const leftWingShade = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            leftWingShade.setAttribute("d", "M-30,0 L-45,-10 L-40,5 Z");
+            leftWingShade.setAttribute("fill", "#300000");
+            leftWingShade.setAttribute("opacity", "0.3");
+            enemy.appendChild(leftWingShade);
+
+            const rightWingShade = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            rightWingShade.setAttribute("d", "M30,0 L45,-10 L40,5 Z");
+            rightWingShade.setAttribute("fill", "#500000");
+            rightWingShade.setAttribute("opacity", "0.3");
+            enemy.appendChild(rightWingShade);
+
+            enemy.setAttribute("transform", "scale(0.5)");
+
+            const smoke = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            smoke.setAttribute("fill", "rgba(128, 128, 128, 0.5)");
+            smoke.setAttribute("filter", "url(#smokeBlur)");
+            enemy.appendChild(smoke);
+            
+            const edges = [
+                {x: Math.random() * 1000, y: -100},
+                {x: Math.random() * 1000, y: 1100},
+                {x: -100, y: Math.random() * 1000},
+                {x: 1100, y: Math.random() * 1000}
+            ];
+            const spawnPoint = edges[Math.floor(Math.random() * edges.length)];
+            
+            enemiesGroup.appendChild(enemy);
+            return {
+                element: enemy,
+                x: spawnPoint.x,
+                y: spawnPoint.y,
+                smoke: smoke,
+                health: 100,
+                smokeTrail: [],
+                dx: 0,
+                dy: 0
+            };
+        }
+
+        function createLaser() {
+            const laser = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            laser.setAttribute("stroke", "lime");
+            laser.setAttribute("stroke-width", "2");
+            lasersGroup.appendChild(laser);
+            
+            return {
+                element: laser,
+                x: playerX,
+                y: playerY,
+                angle: Math.random() * Math.PI * 2 // Random direction for now
+            };
+        }
+
+        function createExplosion(x, y, scale, size) {
+            const explosion = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", x);
+            circle.setAttribute("cy", y);
+            circle.setAttribute("r", size * scale);
+            circle.setAttribute("fill", "url(#explosionGradient)");
+            circle.setAttribute("filter", "url(#explosionBlur)");
+            explosion.appendChild(circle);
+
+            for (let i = 0; i < 20; i++) {
+                const smoke = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                smoke.setAttribute("cx", x);
+                smoke.setAttribute("cy", y);
+                smoke.setAttribute("r", (Math.random() * 5 + 2) * scale);
+                smoke.setAttribute("fill", "rgba(100, 100, 100, 0.5)");
+                smoke.setAttribute("filter", "url(#explosionBlur)");
+                explosion.appendChild(smoke);
+            }
+
+            for (let i = 0; i < 30; i++) {
+                const sparkle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                sparkle.setAttribute("cx", x);
+                sparkle.setAttribute("cy", y);
+                sparkle.setAttribute("r", Math.random() * 2 * scale);
+                sparkle.setAttribute("fill", "white");
+                explosion.appendChild(sparkle);
+            }
+
+            explosionsGroup.appendChild(explosion);
+            return {
+                element: explosion,
+                x: x,
+                y: y,
+                scale: scale,
+                size: size,
+                time: 0,
+                particles: Array.from(explosion.children)
+            };
+        }
+
+        function updateGame() {
+            if (!gameActive) return;
+
+            const viewBox = gameArea.viewBox.baseVal;
+
+            // Update stars
+            stars.forEach(star => {
+                star.z -= speed;
+                if (star.z <= 0) star.z += 1000;
+                
+                const scale = 500 / star.z;
+                const x = star.x * scale + viewBox.width / 2;
+                const y = star.y * scale + viewBox.height / 2;
+                
+                star.element.setAttribute('cx', x);
+                star.element.setAttribute('cy', y);
+                star.element.setAttribute('r', Math.max(0.1, scale));
+            });
+
+            // Update solar systems
+            for (let i = solarSystems.length - 1; i >= 0; i--) {
+                const system = solarSystems[i];
+                system.z -= speed;
+                system.x -= speed * 0.1;  // Slight horizontal movement
+
+                if (system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 2) {
+                    solarSystemsGroup.removeChild(system.element);
+                    solarSystems.splice(i, 1);
+                    solarSystems.push(createSolarSystem());
+                } else {
+                    const scale = 500 / system.z;
+                    const x = system.x * scale + viewBox.width / 2;
+                    const y = system.y * scale + viewBox.height / 2;
+                    
+                    system.element.setAttribute('transform', `translate(${x}, ${y}) scale(${scale})`);
+
+                    // Update planets
+                    system.planets.forEach(planet => {
+                        planet.orbitAngle += planet.orbitSpeed * speed;
+                        const planetX = Math.cos(planet.orbitAngle) * planet.orbitRadius;
+                        const planetY = Math.sin(planet.orbitAngle) * planet.orbitRadius;
+                        planet.element.setAttribute('transform', `translate(${planetX}, ${planetY})`);
+
+                        // Update moons
+                        planet.moons.forEach(moon => {
+                            moon.angle += moon.speed * speed;
+                            const moonX = Math.cos(moon.angle) * moon.distance;
+                            const moonY = Math.sin(moon.angle) * moon.distance;
+                            moon.element.setAttribute('cx', moonX);
+                            moon.element.setAttribute('cy', moonY);
+                        });
+
+                        // Check if player visited the planet
+                        const dx = x + planetX - playerX;
+                        const dy = y + planetY - playerY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance < 100 * scale && !planet.visited && !isStealthMode) {
+                            planet.visited = true;
+                            planet.glow.setAttribute('opacity', '0.8');
+                            score += 10;
+                            updateScoreDisplay();
+                        }
+                    });
+                }
+            }
+
+            // Update asteroids
+            for (let i = asteroids.length - 1; i >= 0; i--) {
+                const asteroid = asteroids[i];
+                asteroid.z -= speed * 1.5;
+                asteroid.x -= speed * 0.15;  // Slight horizontal movement
+
+                if (asteroid.z <= 0 || asteroid.z > 1000 || Math.abs(asteroid.x) > 1000 || Math.abs(asteroid.y) > 1000) {
+                    asteroidsGroup.removeChild(asteroid.element);
+                    asteroidsGroup.removeChild(asteroid.tail);
+                    asteroid.sparkles.forEach(sparkle => asteroidsGroup.removeChild(sparkle));
+                    asteroids.splice(i, 1);
+                    asteroids.push(createAsteroid());
+                } else {
+                    const scale = 500 / asteroid.z;
+                    const x = asteroid.x * scale + viewBox.width / 2;
+                    const y = asteroid.y * scale + viewBox.height / 2;
+                    
+                    asteroid.element.setAttribute('cx', x);
+                    asteroid.element.setAttribute('cy', y);
+                    asteroid.element.setAttribute('r', 10 * scale);
+
+                    const tailLength = Math.min(250, 125 * (1000 - asteroid.z) / 1000);
+                    const tailWidth = 20 * scale;
+                    
+                    const centerX = viewBox.width / 2;
+                    const centerY = viewBox.height / 2;
+                    const dx = centerX - x;
+                    const dy = centerY - y;
+                    const angle = Math.atan2(dy, dx);
+
+                    const tailPath = `M${x},${y} 
+                                  L${x - Math.sin(angle) * tailWidth/2},${y + Math.cos(angle) * tailWidth/2}
+                                  L${x + Math.cos(angle) * tailLength * scale},${y + Math.sin(angle) * tailLength * scale}
+                                  L${x + Math.sin(angle) * tailWidth/2},${y - Math.cos(angle) * tailWidth/2}
+                                  Z`;
+                
+                    asteroid.tail.setAttribute('d', tailPath);
+
+                    asteroid.sparkles.forEach((sparkle, j) => {
+                        let sparkleX, sparkleY;
+                        if (j % 2 === 0) {
+                            sparkleX = x + (Math.random() - 0.5) * 20 * scale;
+                            sparkleY = y + (Math.random() - 0.5) * 20 * scale;
+                        } else {
+                            const t = Math.random();
+                            sparkleX = x + Math.cos(angle) * tailLength * scale * t;
+                            sparkleY = y + Math.sin(angle) * tailLength * scale * t;
+                            const perpX = -Math.sin(angle) * tailWidth/2 * (1 - t);
+                            const perpY = Math.cos(angle) * tailWidth/2 * (1 - t);
+                            sparkleX += perpX + (Math.random() - 0.5) * tailWidth * (1 - t);
+                            sparkleY += perpY + (Math.random() - 0.5) * tailWidth * (1 - t);
+                        }
+                        sparkle.setAttribute('cx', sparkleX);
+                        sparkle.setAttribute('cy', sparkleY);
+                        sparkle.setAttribute('r', (Math.random() * 1 + 0.5) * scale);
+                        sparkle.style.opacity = Math.random() * 0.7 + 0.3;
+                    });
+
+                    // Check collision with player
+                    const playerDx = x - playerX;
+                    const playerDy = y - playerY;
+                    const playerDistance = Math.sqrt(playerDx * playerDx + playerDy * playerDy);
+                    const collisionRadius = 10 * scale + 40;
+
+                    if (playerDistance < collisionRadius && !isStealthMode) {
+                        health -= 10;
+                        asteroidsGroup.removeChild(asteroid.element);
+                        asteroidsGroup.removeChild(asteroid.tail);
+                        asteroid.sparkles.forEach(sparkle => asteroidsGroup.removeChild(sparkle));
+                        asteroids.splice(i, 1);
+                        asteroids.push(createAsteroid());
+                        explosions.push(createExplosion(x, y, scale, 40));
+                        updateHealthDisplay();
+                    }
+                }
+            }
+
+            // Update enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                if (!isStealthMode) {
+                    const dx = playerX - enemy.x;
+                    const dy = playerY - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    enemy.dx = (dx / distance) * 2 * speed;
+                    enemy.dy = (dy / distance) * 2 * speed;
+                }
+                
+                enemy.x += enemy.dx;
+                enemy.y += enemy.dy;
+
+                // Update enemy shape
+                const angle = Math.atan2(enemy.dy, enemy.dx);
+                enemy.element.setAttribute('transform', `translate(${enemy.x},${enemy.y}) rotate(${angle * 180 / Math.PI})`);
+
+                // Update smoke trail
+                enemy.smokeTrail.unshift({x: enemy.x, y: enemy.y, age: 0});
+                if (enemy.smokeTrail.length > 20) {
+                    enemy.smokeTrail.pop();
+                }
+
+                let smokePath = `M${enemy.x},${enemy.y}`;
+                enemy.smokeTrail.forEach((point, index) => {
+                    point.age++;
+                    const opacity = 1 - point.age / 20;
+                    smokePath += ` L${point.x},${point.y}`;
+                });
+                enemy.smoke.setAttribute('d', smokePath);
+                enemy.smoke.setAttribute('opacity', 0.5);
+
+                // Check if enemy is out of bounds
+                if (enemy.x < -100 || enemy.x > viewBox.width + 100 || enemy.y < -100 || enemy.y > viewBox.height + 100) {
+                    enemiesGroup.removeChild(enemy.element);
+                    enemies.splice(i, 1);
+                }
+
+                // Check collision with player
+                if (!isStealthMode) {
+                    const dx = playerX - enemy.x;
+                    const dy = playerY - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < 60) {
+                        health -= 10;
+                        enemiesGroup.removeChild(enemy.element);
+                        enemies.splice(i, 1);
+                        explosions.push(createExplosion(enemy.x, enemy.y, 1, 60));
+                        updateHealthDisplay();
+                    }
+                }
+            }
+
+            // Update lasers
+            if (isFiring && !isStealthMode) {
+                lasers.push(createLaser());
+            }
+
+            for (let i = lasers.length - 1; i >= 0; i--) {
+                const laser = lasers[i];
+                laser.x += Math.cos(laser.angle) * 10 * speed;
+                laser.y += Math.sin(laser.angle) * 10 * speed;
+
+                laser.element.setAttribute('x1', laser.x);
+                laser.element.setAttribute('y1', laser.y);
+                laser.element.setAttribute('x2', laser.x + Math.cos(laser.angle) * 20);
+                laser.element.setAttribute('y2', laser.y + Math.sin(laser.angle) * 20);
+
+                if (laser.x < 0 || laser.x > viewBox.width || laser.y < 0 || laser.y > viewBox.height) {
+                    lasersGroup.removeChild(laser.element);
+                    lasers.splice(i, 1);
+                    continue;
+                }
+
+                // Collision detection with enemies
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const enemy = enemies[j];
+                    const dx = laser.x - enemy.x;
+                    const dy = laser.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 20) {
+                        enemy.health -= 25;
+                        if (enemy.health <= 0) {
+                            enemiesGroup.removeChild(enemy.element);
+                            enemies.splice(j, 1);
+                            explosions.push(createExplosion(enemy.x, enemy.y, 1, 60));
+                            score += 10;
+                            updateScoreDisplay();
+                        }
+                        lasersGroup.removeChild(laser.element);
+                        lasers.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+
+            // Update explosions
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                const explosion = explosions[i];
+                explosion.time += 1;
+                
+                if (explosion.time > 30) {
+                    explosionsGroup.removeChild(explosion.element);
+                    explosions.splice(i, 1);
+                } else {
+                    const progress = explosion.time / 30;
+                    const opacity = 1 - progress;
+                    const scale = explosion.scale * (1 + progress * 0.5);
+                    
+                    explosion.particles.forEach((particle, index) => {
+                        if (index === 0) {
+                            // Main explosion circle
+                            particle.setAttribute('r', explosion.size * scale);
+                            particle.style.opacity = opacity;
+                        } else if (index < 21) {
+                            // Smoke particles
+                            const angle = (index / 20) * Math.PI * 2;
+                            const distance = progress * 30 * explosion.scale;
+                            const x = explosion.x + Math.cos(angle) * distance;
+                            const y = explosion.y + Math.sin(angle) * distance;
+                            
+                            particle.setAttribute('cx', x);
+                            particle.setAttribute('cy', y);
+                            particle.setAttribute('r', (particle.getAttribute('r') * scale) / explosion.scale);
+                            particle.style.opacity = opacity * 0.7;
+                        } else {
+                            // Sparkles
+                            const angle = Math.random() * Math.PI * 2;
+                            const distance = progress * 50 * explosion.scale;
+                            const x = explosion.x + Math.cos(angle) * distance;
+                            const y = explosion.y + Math.sin(angle) * distance;
+                            
+                            particle.setAttribute('cx', x);
+                            particle.setAttribute('cy', y);
+                            particle.setAttribute('r', (particle.getAttribute('r') * scale) / explosion.scale);
+                            particle.style.opacity = opacity * (1 - progress);
+                        }
+                    });
+                }
+            }
+
+            // Spawn new enemies
+            if (Math.random() < 0.005 && enemies.length < MAX_ENEMIES) {
+                enemies.push(createEnemy());
+            }
+
+            // Update meters
+            speedMeter.style.width = `${speed * 20}%`;
+            stealthMeter.style.width = `${stealth}%`;
+            laserMeter.style.width = `${laserCharge}%`;
+
+            if (health <= 0) {
+                gameOver();
+            }
+
+            requestAnimationFrame(updateGame);
+        }
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `SCORE ${score}`;
+        }
+
+        function updateHealthDisplay() {
+            healthDisplay.textContent = `HEALTH ${health}`;
+        }
+
+        function gameOver() {
+            gameActive = false;
+            alert(`Game Over! Your score: ${score}`);
+            resetGame();
+        }
+
+        function resetGame() {
+            score = 0;
+            health = 100;
+            speed = 1;
+            stealth = 100;
+            laserCharge = 100;
+            playerX = gameArea.viewBox.baseVal.width / 2;
+            playerY = gameArea.viewBox.baseVal.height * 0.8;
+            isStealthMode = false;
+
+            // Clear all game objects
+            while (solarSystemsGroup.firstChild) solarSystemsGroup.removeChild(solarSystemsGroup.firstChild);
+            while (asteroidsGroup.firstChild) asteroidsGroup.removeChild(asteroidsGroup.firstChild);
+            while (enemiesGroup.firstChild) enemiesGroup.removeChild(enemiesGroup.firstChild);
+            while (lasersGroup.firstChild) lasersGroup.removeChild(lasersGroup.firstChild);
+            while (explosionsGroup.firstChild) explosionsGroup.removeChild(explosionsGroup.firstChild);
+
+            solarSystems.length = 0;
+            asteroids.length = 0;
+            enemies.length = 0;
+            lasers.length = 0;
+            explosions.length = 0;
+
+            // Recreate initial game objects
+            for (let i = 0; i < MAX_SOLAR_SYSTEMS; i++) solarSystems.push(createSolarSystem());
+            for (let i = 0; i < MAX_ASTEROIDS; i++) asteroids.push(createAsteroid());
+
+            updateScoreDisplay();
+            updateHealthDisplay();
+            playerUFO.setAttribute('transform', `translate(${playerX},${playerY})`);
+            playerUFO.style.opacity = '1';
+
+            gameActive = true;
+            requestAnimationFrame(updateGame);
+        }
+
+        // Event listeners for controls
+        document.addEventListener('keydown', (event) => {
+            if (!gameActive) return;
+            switch(event.key) {
+                case 'ArrowUp':
+                    speed = Math.min(speed + 0.1, 5);
+                    break;
+                case 'ArrowDown':
+                    speed = Math.max(speed - 0.1, 0.1);
+                    break;
+                case 'ArrowLeft':
+                    playerX = Math.max(playerX - 5, 40);
+                    playerUFO.setAttribute('transform', `translate(${playerX},${playerY})`);
+                    break;
+                case 'ArrowRight':
+                    playerX = Math.min(playerX + 5, gameArea.viewBox.baseVal.width - 40);
+                    playerUFO.setAttribute('transform', `translate(${playerX},${playerY})`);
+                    break;
+                case ' ':
+                    if (laserCharge >= 20) {
+                        isFiring = true;
+                        laserCharge -= 20;
+                    }
+                    break;
+                case 'Shift':
+                    if (stealth >= 20) {
+                        isStealthMode = !isStealthMode;
+                        stealth -= 20;
+                        playerUFO.style.opacity = isStealthMode ? '0.5' : '1';
+                    }
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            if (event.key === ' ') {
+                isFiring = false;
+            }
+        });
+
+        // Touch controls
+        const controls = document.getElementById('controls');
+        controls.addEventListener('touchstart', handleTouch);
+        controls.addEventListener('touchend', handleTouch);
+
+        function handleTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0] || e.changedTouches[0];
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (target.tagName === 'DIV') {
+                const action = target.textContent;
+                switch(action) {
+                    case '↑':
+                        speed = Math.min(speed + 0.1, 5);
+                        break;
+                    case '↓':
+                        speed = Math.max(speed - 0.1, 0.1);
+                        break;
+                    case '←':
+                        playerX = Math.max(playerX - 5, 40);
+                        playerUFO.setAttribute('transform', `translate(${playerX},${playerY})`);
+                        break;
+                    case '→':
+                        playerX = Math.min(playerX + 5, gameArea.viewBox.baseVal.width - 40);
+                        playerUFO.setAttribute('transform', `translate(${playerX},${playerY})`);
+                        break;
+                }
+            } else if (target.id === 'laserContainer') {
+                if (laserCharge >= 20) {
+                    isFiring = e.type === 'touchstart';
+                    if (isFiring) laserCharge -= 20;
+                }
+            } else if (target.id === 'stealthContainer') {
+                if (stealth >= 20 && e.type === 'touchstart') {
+                    isStealthMode = !isStealthMode;
+                    stealth -= 20;
+                    playerUFO.style.opacity = isStealthMode ? '0.5' : '1';
+                }
+            }
+        }
+
+        // Fullscreen button
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                gameContainer.requestFullscreen();
+                fullscreenBtn.textContent = 'EXIT';
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    fullscreenBtn.textContent = 'EXPAND';
+                }
+            }
+        });
+
+        // Reset button
+        resetBtn.addEventListener('click', resetGame);
+
+        // Add event listener for window resize and fullscreen change
+        window.addEventListener('resize', updateGameArea);
+        document.addEventListener('fullscreenchange', updateGameArea);
+
+        function updateGameArea() {
+            const gameAreaRect = gameContainer.getBoundingClientRect();
+            const aspectRatio = gameAreaRect.width / gameAreaRect.height;
+            
+            if (aspectRatio > 1) {
+                // Landscape
+                gameArea.setAttribute('viewBox', `0 0 ${1000 * aspectRatio} 1000`);
+            } else {
+                // Portrait
+                gameArea.setAttribute('viewBox', `0 0 1000 ${1000 / aspectRatio}`);
+            }
+
+            // Center the UFO after resizing
+            const viewBox = gameArea.viewBox.baseVal;
+            playerX = viewBox.width / 2;
+            playerY = viewBox.height * 0.8;
+            playerUFO.setAttribute('transform', `translate(${playerX},${playerY})`);
+        }
+
+        // Initialize the game
+        function initGame() {
+            for (let i = 0; i < STAR_COUNT; i++) {
+                stars.push(createStar());
+            }
+            for (let i = 0; i < MAX_SOLAR_SYSTEMS; i++) {
+                solarSystems.push(createSolarSystem());
+            }
+            for (let i = 0; i < MAX_ASTEROIDS; i++) {
+                asteroids.push(createAsteroid());
+            }
+            updateScoreDisplay();
+            updateHealthDisplay();
+            updateGameArea();
+        }
+
+        // Start button event listener
+        startBtn.addEventListener('click', () => {
+            startScreen.style.display = 'none';
+            gameActive = true;
+            initGame();
+            updateGame();
+        });
+
+        // Initial setup
+        updateGameArea();
+    </script>
+</body>
+</html>
