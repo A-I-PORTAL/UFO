@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Ring Effect</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+            overflow: hidden;
+        }
+        #gameContainer {
+            position: relative;
+            width: 80vmin;
+            height: 80vmin;
+        }
+        #gameArea {
+            width: 100%;
+            height: 100%;
+        }
+        #speedControl {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #joystick {
+            width: 30px;
+            height: 30px;
+            background-color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <svg id="gameArea" viewBox="0 0 1000 1000">
+            <g id="stars"></g>
+        </svg>
+        <div id="speedControl">
+            <div id="joystick"></div>
+        </div>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const starsGroup = document.getElementById('stars');
+        const speedControl = document.getElementById('speedControl');
+        const joystick = document.getElementById('joystick');
+
+        const centerX = 500;
+        const centerY = 500;
+        const radius = 400; // Smaller radius to fit within the window
+        let rotationSpeed = 1;
+
+        function createStars() {
+            const starCount = 200;
+            for (let i = 0; i < starCount; i++) {
+                const angle = (i / starCount) * Math.PI * 2;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+                const size = Math.random() * 2 + 1;
+
+                const star = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                star.setAttribute("cx", x);
+                star.setAttribute("cy", y);
+                star.setAttribute("r", size);
+                star.setAttribute("fill", "white");
+                starsGroup.appendChild(star);
+            }
+        }
+
+        function rotateStars() {
+            const currentRotation = starsGroup.getAttribute("transform") || "";
+            const match = currentRotation.match(/rotate\(([-\d.]+)/);
+            let angle = match ? parseFloat(match[1]) : 0;
+            
+            angle += rotationSpeed;
+            if (angle >= 360) angle -= 360;
+            
+            starsGroup.setAttribute("transform", `rotate(${angle} ${centerX} ${centerY})`);
+            requestAnimationFrame(rotateStars);
+        }
+
+        createStars();
+        rotateStars();
+
+        // Joystick controls
+        let isDragging = false;
+        const maxDistance = 15;
+
+        function updateSpeed(x, y) {
+            const distance = Math.sqrt(x * x + y * y);
+            rotationSpeed = (distance / maxDistance) * 2; // Adjust multiplier for desired max speed
+            joystick.style.transform = `translate(${x}px, ${y}px)`;
+        }
+
+        speedControl.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            updateJoystick(e);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                updateJoystick(e);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            joystick.style.transform = 'translate(0, 0)';
+            rotationSpeed = 1;
+        });
+
+        function updateJoystick(e) {
+            const rect = speedControl.getBoundingClientRect();
+            let x = e.clientX - rect.left - rect.width / 2;
+            let y = e.clientY - rect.top - rect.height / 2;
+            const distance = Math.sqrt(x * x + y * y);
+            
+            if (distance > maxDistance) {
+                const angle = Math.atan2(y, x);
+                x = Math.cos(angle) * maxDistance;
+                y = Math.sin(angle) * maxDistance;
+            }
+
+            updateSpeed(x, y);
+        }
+    </script>
+</body>
+</html>
