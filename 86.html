@@ -975,16 +975,18 @@
             const viewBox = gameArea.viewBox.baseVal;
             const reverseDirection = starSpeedY < 0;
             
-            // Randomize the number of solar systems (1 to 3)
-            const desiredSolarSystemCount = Math.floor(Math.random() * 3) + 1; // Adjust the range (1 to 3) as needed
-            
-            // Remove excess solar systems or add new ones as needed
-            while (solarSystems.length > desiredSolarSystemCount) {
-                const removedSystem = solarSystems.pop();
-                solarSystemsGroup.removeChild(removedSystem.element);
-            }
-            while (solarSystems.length < desiredSolarSystemCount) {
-                solarSystems.push(createSolarSystem());
+            // Only randomize the number of solar systems when all current systems are out of view
+            if (solarSystems.every(system => system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 2)) {
+                const desiredSolarSystemCount = Math.floor(Math.random() * 3) + 1; // Adjust the range (1 to 3) as needed
+                
+                // Remove excess solar systems or add new ones as needed
+                while (solarSystems.length > desiredSolarSystemCount) {
+                    const removedSystem = solarSystems.pop();
+                    solarSystemsGroup.removeChild(removedSystem.element);
+                }
+                while (solarSystems.length < desiredSolarSystemCount) {
+                    solarSystems.push(createSolarSystem());
+                }
             }
             
             for (let i = solarSystems.length - 1; i >= 0; i--) {
