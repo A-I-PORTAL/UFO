@@ -983,7 +983,7 @@
             // Check if it's time to spawn a new solar system
             if (currentTime - lastSolarSystemSpawnTime > nextSolarSystemSpawnInterval) {
                 // Only spawn if all current systems are out of view
-                if (solarSystems.every(system => system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 2)) {
+                if (solarSystems.every(system => system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 3)) {
                     const desiredSolarSystemCount = Math.floor(Math.random() * 3) + 1; // Adjust the range (1 to 3) as needed
                     
                     // Remove excess solar systems or add new ones as needed
@@ -1000,7 +1000,7 @@
                     
                     // Randomize the next spawn interval
                     // Adjust these values to control spawn frequency (in milliseconds)
-                    const minSpawnInterval = 1000; // Minimum time between spawns (1 seconds)
+                    const minSpawnInterval = 100; // Minimum time between spawns (0.1 seconds)
                     const maxSpawnInterval = 3000; // Maximum time between spawns (3 seconds)
                     nextSolarSystemSpawnInterval = minSpawnInterval + Math.random() * (maxSpawnInterval - minSpawnInterval);
                 }
@@ -1025,7 +1025,7 @@
                     const maxSpawnDistance = SOLAR_SYSTEM_SPAWN_DISTANCE * 3.0; // Maximum spawn distance (adjust range: 2.0 to 4.0)
                     system.z = reverseDirection ? 0 : minSpawnDistance + Math.random() * (maxSpawnDistance - minSpawnDistance);
                     system.opacity = 0;
-                    system.scale = 0.5 + Math.random() * 0.5; // Randomize initial scale (range: 0.5 to 1.0)
+                    system.scale = 0.5 + Math.random() * 1.5; // Randomize initial scale (range: 0.5 to 1.0)
                     system.initialSpawnDistance = system.z;
                     
                     // Reset planet visitation status when respawning
