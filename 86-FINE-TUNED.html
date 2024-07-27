@@ -984,7 +984,7 @@
             if (currentTime - lastSolarSystemSpawnTime > nextSolarSystemSpawnInterval) {
                 // Only spawn if all current systems are out of view
                 if (solarSystems.every(system => system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 3)) {
-                    const desiredSolarSystemCount = Math.floor(Math.random() * 1) + 1; // Adjust the range (1 to 3) as needed
+                    const desiredSolarSystemCount = 1; // Changed to always spawn 1 system at a time
                     
                     // Remove excess solar systems or add new ones as needed
                     while (solarSystems.length > desiredSolarSystemCount) {
@@ -999,9 +999,9 @@
                     lastSolarSystemSpawnTime = currentTime;
                     
                     // Randomize the next spawn interval
-                    // Adjust these values to control spawn frequency (in milliseconds)
-                    const minSpawnInterval = 100; // Minimum time between spawns (0.1 seconds)
-                    const maxSpawnInterval = 3000; // Maximum time between spawns (3 seconds)
+                    // Adjusted to be 10x less frequent
+                    const minSpawnInterval = 1000; // Minimum time between spawns (1 second)
+                    const maxSpawnInterval = 30000; // Maximum time between spawns (30 seconds)
                     nextSolarSystemSpawnInterval = minSpawnInterval + Math.random() * (maxSpawnInterval - minSpawnInterval);
                 }
             }
@@ -1025,7 +1025,8 @@
                     const maxSpawnDistance = SOLAR_SYSTEM_SPAWN_DISTANCE * 3.0; // Maximum spawn distance (adjust range: 2.0 to 4.0)
                     system.z = reverseDirection ? 0 : minSpawnDistance + Math.random() * (maxSpawnDistance - minSpawnDistance);
                     system.opacity = 0;
-                    system.scale = 0.1 + Math.random() * 5.0; // Randomize initial scale (range: 0.5 to 1.0)
+                    // Adjusted to have a more extreme range of initial scales
+                    system.scale = 0.01 + Math.random() * 9.99; // Randomize initial scale (range: 0.01 to 10.0)
                     system.initialSpawnDistance = system.z;
                     
                     // Reset planet visitation status when respawning
