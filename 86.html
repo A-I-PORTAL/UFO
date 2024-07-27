@@ -610,6 +610,10 @@
         let health = 100;
         let isPaused = false;
 
+        // New variables for controlling solar system spawn frequency
+        let lastSolarSystemSpawnTime = 0;
+        let nextSolarSystemSpawnInterval = 0;
+
         const ENEMY_SPEED = 2;
         const STAR_MAX_SPEED = 6.25;
         let starSpeedX = 0;
@@ -974,18 +978,31 @@
         function updateSolarSystems() {
             const viewBox = gameArea.viewBox.baseVal;
             const reverseDirection = starSpeedY < 0;
+            const currentTime = Date.now();
             
-            // Only randomize the number of solar systems when all current systems are out of view
-            if (solarSystems.every(system => system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 2)) {
-                const desiredSolarSystemCount = Math.floor(Math.random() * 3) + 1; // Adjust the range (1 to 3) as needed
-                
-                // Remove excess solar systems or add new ones as needed
-                while (solarSystems.length > desiredSolarSystemCount) {
-                    const removedSystem = solarSystems.pop();
-                    solarSystemsGroup.removeChild(removedSystem.element);
-                }
-                while (solarSystems.length < desiredSolarSystemCount) {
-                    solarSystems.push(createSolarSystem());
+            // Check if it's time to spawn a new solar system
+            if (currentTime - lastSolarSystemSpawnTime > nextSolarSystemSpawnInterval) {
+                // Only spawn if all current systems are out of view
+                if (solarSystems.every(system => system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 2)) {
+                    const desiredSolarSystemCount = Math.floor(Math.random() * 3) + 1; // Adjust the range (1 to 3) as needed
+                    
+                    // Remove excess solar systems or add new ones as needed
+                    while (solarSystems.length > desiredSolarSystemCount) {
+                        const removedSystem = solarSystems.pop();
+                        solarSystemsGroup.removeChild(removedSystem.element);
+                    }
+                    while (solarSystems.length < desiredSolarSystemCount) {
+                        solarSystems.push(createSolarSystem());
+                    }
+
+                    // Set the time for the next spawn
+                    lastSolarSystemSpawnTime = currentTime;
+                    
+                    // Randomize the next spawn interval
+                    // Adjust these values to control spawn frequency (in milliseconds)
+                    const minSpawnInterval = 10000; // Minimum time between spawns (10 seconds)
+                    const maxSpawnInterval = 30000; // Maximum time between spawns (30 seconds)
+                    nextSolarSystemSpawnInterval = minSpawnInterval + Math.random() * (maxSpawnInterval - minSpawnInterval);
                 }
             }
             
@@ -1713,6 +1730,10 @@
             setupMuteButton();
             setupPauseButton();
             soundManager.playBackgroundMusic();
+            // Initialize solar system spawn time
+            lastSolarSystemSpawnTime = Date.now();
+            // Set initial spawn interval (you can adjust this value)
+            nextSolarSystemSpawnInterval = 15000; // 15 seconds
             updateGame();
         }
 
