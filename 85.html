@@ -994,7 +994,7 @@
                     system.initialSpawnDistance = system.z;
                     
                     // Randomize system size
-                    system.baseSize = 0.5 + Math.random() * 1.5; // Random size between 0.5 and 1
+                    system.baseSize = 0.5 + Math.random() * 0.5; // Random size between 0.5 and 1
                     
                     // Reset planet visitation status when respawning
                     system.planets.forEach(planet => {
@@ -1006,7 +1006,7 @@
 
                 // Calculate scale based on distance, with a larger maximum size
                 const minScale = 0.1; // Minimum scale when far away
-                const maxScale = 3.0; // Maximum scale when very close
+                const maxScale = 13.0; // Maximum scale when very close
                 const scaleRange = maxScale - minScale;
                 const distanceProgress = Math.max(0, Math.min(1, system.z / SOLAR_SYSTEM_SPAWN_DISTANCE));
                 const dynamicScale = minScale + (1 - distanceProgress) * scaleRange;
