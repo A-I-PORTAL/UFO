@@ -1000,8 +1000,8 @@
                     
                     // Randomize the next spawn interval
                     // Adjust these values to control spawn frequency (in milliseconds)
-                    const minSpawnInterval = 510000; // Minimum time between spawns (510 seconds)
-                    const maxSpawnInterval = 1030000; // Maximum time between spawns (1030 seconds)
+                    const minSpawnInterval = 1000; // Minimum time between spawns (1 seconds)
+                    const maxSpawnInterval = 3000; // Maximum time between spawns (3 seconds)
                     nextSolarSystemSpawnInterval = minSpawnInterval + Math.random() * (maxSpawnInterval - minSpawnInterval);
                 }
             }
