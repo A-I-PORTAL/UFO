@@ -985,14 +985,14 @@
 
                 // Calculate fade based on distance from initial spawn point
                 const distanceFromSpawn = Math.abs(system.z - system.initialSpawnDistance);
-                const fadeThreshold = SOLAR_SYSTEM_SPAWN_DISTANCE * 2.5; // Adjust this value (range: 1.0 to 5.0) to change fade distance
+                const fadeThreshold = SOLAR_SYSTEM_SPAWN_DISTANCE * 3.0; // Adjust this value (range: 1.0 to 5.0) to change fade distance
                 const fadeProgress = Math.min(distanceFromSpawn / fadeThreshold, 1);
 
                 if (system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 2) {
                     const angle = Math.random() * Math.PI * 2;
                     system.x = Math.cos(angle) * SOLAR_SYSTEM_SPAWN_DISTANCE;
                     system.y = Math.sin(angle) * SOLAR_SYSTEM_SPAWN_DISTANCE;
-                    system.z = reverseDirection ? 0 : SOLAR_SYSTEM_SPAWN_DISTANCE * 1.5; // Adjust this multiplier (range: 1.0 to 3.0) to spawn further away
+                    system.z = reverseDirection ? 0 : SOLAR_SYSTEM_SPAWN_DISTANCE * 3.0; // Adjust this multiplier (range: 1.0 to 3.0) to spawn further away
                     system.opacity = 0;
                     system.scale = 0.5 + Math.random() * 0.5; // Randomize initial scale (range: 0.5 to 1.0)
                     system.initialSpawnDistance = system.z;
@@ -1013,7 +1013,7 @@
                 system.opacity = 1 - fadeProgress;
 
                 // Adjust the multiplier (range: 1.0 to 5.0) to increase maximum size when close
-                const sizeMultiplier = 1.0; 
+                const sizeMultiplier = 5.0; 
                 system.element.setAttribute('transform', `translate(${x}, ${y}) scale(${scale * system.scale * sizeMultiplier})`);
                 system.element.setAttribute('opacity', system.opacity);
 
