@@ -1013,7 +1013,7 @@
                 system.opacity = 1 - fadeProgress;
 
                 // Adjust the multiplier (range: 1.0 to 5.0) to increase maximum size when close
-                const sizeMultiplier = 5.0; 
+                const sizeMultiplier = 1.0; 
                 system.element.setAttribute('transform', `translate(${x}, ${y}) scale(${scale * system.scale * sizeMultiplier})`);
                 system.element.setAttribute('opacity', system.opacity);
 
