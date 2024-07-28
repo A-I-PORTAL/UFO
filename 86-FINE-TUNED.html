@@ -600,7 +600,11 @@
         const solarSystems = [];
         const asteroids = [];
         const planetTypes = ['earth', 'jupiter', 'mars'];
-
+// NEW
+                // Debug variables
+        let debugLastSpawnTime = 0;
+        let debugSpawnCount = 0;
+// NEW
         let playerX = 500;
         let playerY = 500;
         let laserAngle = 0;
@@ -980,11 +984,21 @@
             const reverseDirection = starSpeedY < 0;
             const currentTime = Date.now();
             
+            // Debug logging
+            if (currentTime - debugLastSpawnTime > 5000) {  // Log every 5 seconds
+                console.log(`Solar systems spawned in last 5 seconds: ${debugSpawnCount}`);
+                console.log(`Current solar system count: ${solarSystems.length}`);
+                console.log(`Time since last spawn: ${currentTime - lastSolarSystemSpawnTime}ms`);
+                console.log(`Next spawn interval: ${nextSolarSystemSpawnInterval}ms`);
+                debugLastSpawnTime = currentTime;
+                debugSpawnCount = 0;
+            }
+
             // Check if it's time to spawn a new solar system
             if (currentTime - lastSolarSystemSpawnTime > nextSolarSystemSpawnInterval) {
                 // Only spawn if all current systems are out of view
                 if (solarSystems.every(system => system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 3)) {
-                    const desiredSolarSystemCount = 1; // Changed to always spawn 1 system at a time
+                    const desiredSolarSystemCount = 1; // Always spawn 1 system at a time
                     
                     // Remove excess solar systems or add new ones as needed
                     while (solarSystems.length > desiredSolarSystemCount) {
@@ -993,16 +1007,18 @@
                     }
                     while (solarSystems.length < desiredSolarSystemCount) {
                         solarSystems.push(createSolarSystem());
+                        debugSpawnCount++;
                     }
 
                     // Set the time for the next spawn
                     lastSolarSystemSpawnTime = currentTime;
                     
-                    // Randomize the next spawn interval
-                    // Adjusted to be 10x less frequent
-                    const minSpawnInterval = 1000; // Minimum time between spawns (1 second)
-                    const maxSpawnInterval = 30000; // Maximum time between spawns (30 seconds)
+                    // Randomize the next spawn interval (100x less frequent than before)
+                    const minSpawnInterval = 10000; // Minimum time between spawns (10 seconds)
+                    const maxSpawnInterval = 300000; // Maximum time between spawns (5 minutes)
                     nextSolarSystemSpawnInterval = minSpawnInterval + Math.random() * (maxSpawnInterval - minSpawnInterval);
+
+                    console.log(`Spawned a solar system. Next spawn in ${nextSolarSystemSpawnInterval / 1000} seconds.`);
                 }
             }
             
@@ -1025,7 +1041,6 @@
                     const maxSpawnDistance = SOLAR_SYSTEM_SPAWN_DISTANCE * 3.0; // Maximum spawn distance (adjust range: 2.0 to 4.0)
                     system.z = reverseDirection ? 0 : minSpawnDistance + Math.random() * (maxSpawnDistance - minSpawnDistance);
                     system.opacity = 0;
-                    // Adjusted to have a more extreme range of initial scales
                     system.scale = 0.01 + Math.random() * 9.99; // Randomize initial scale (range: 0.01 to 10.0)
                     system.initialSpawnDistance = system.z;
                     
@@ -1064,7 +1079,6 @@
             }
         }
 // NEW
-
         function updatePlanetVisits(solarSystem, playerX, playerY) {
             const viewBox = gameArea.viewBox.baseVal;
             const systemScale = 500 / solarSystem.z;
