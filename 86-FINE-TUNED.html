@@ -991,26 +991,16 @@
             // Check if it's time to spawn a new solar system
             if (currentTime - lastSolarSystemSpawnTime > nextSolarSystemSpawnInterval) {
                 console.log("Spawn interval reached");
-                // Only spawn if there are no solar systems or all current systems are out of view
-                if (solarSystems.length === 0 || solarSystems.every(system => system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 3)) {
-                    console.log("Conditions met for spawning");
-                    // Always spawn only one system
-                    const desiredSolarSystemCount = 1;
-                    
-                    // Remove all existing solar systems
-                    while (solarSystems.length > 0) {
-                        const removedSystem = solarSystems.pop();
-                        solarSystemsGroup.removeChild(removedSystem.element);
-                    }
-                    
-                    // Add one new solar system
+                // Spawn a new system if there are no solar systems
+                if (solarSystems.length === 0) {
+                    console.log("Spawning new solar system");
                     solarSystems.push(createSolarSystem());
                     console.log("New solar system spawned");
 
                     // Set the time for the next spawn
                     lastSolarSystemSpawnTime = currentTime;
                     
-                    // Randomize the next spawn interval (much less frequent)
+                    // Randomize the next spawn interval
                     const minSpawnInterval = 300000; // Minimum time between spawns (5 minutes)
                     const maxSpawnInterval = 900000; // Maximum time between spawns (15 minutes)
                     nextSolarSystemSpawnInterval = minSpawnInterval + Math.random() * (maxSpawnInterval - minSpawnInterval);
@@ -1032,6 +1022,8 @@
                     console.log("Solar system out of view, removing");
                     solarSystemsGroup.removeChild(system.element);
                     solarSystems.splice(i, 1);
+                    // Reset the spawn timer when a system is removed
+                    lastSolarSystemSpawnTime = currentTime;
                 } else {
                     const scale = 500 / system.z;
                     const x = system.x * scale + viewBox.width / 2;
@@ -1708,7 +1700,6 @@
 // NEW
         function initGame() {
             createStars(200);
-            // Remove initial solar system creation
             for (let i = 0; i < 5; i++) asteroids.push(createAsteroid());
             updateScoreDisplay();
             updateHealthDisplay();
@@ -1727,6 +1718,14 @@
             setupMuteButton();
             setupPauseButton();
             soundManager.playBackgroundMusic();
+            
+            // Clear any existing solar systems
+            while (solarSystems.length > 0) {
+                const removedSystem = solarSystems.pop();
+                if (removedSystem.element && removedSystem.element.parentNode) {
+                    removedSystem.element.parentNode.removeChild(removedSystem.element);
+                }
+            }
             
             // Initialize solar system spawn variables
             lastSolarSystemSpawnTime = Date.now();
