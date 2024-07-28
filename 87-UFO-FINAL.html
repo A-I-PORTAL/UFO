@@ -1057,17 +1057,16 @@
                 const planetX = systemX + Math.cos(planet.orbitAngle) * planet.orbitRadius * systemScale * solarSystem.scale;
                 const planetY = systemY + Math.sin(planet.orbitAngle) * planet.orbitRadius * systemScale * solarSystem.scale;
 
-                // Calculate 3D distance
-                const dx = (solarSystem.x + Math.cos(planet.orbitAngle) * planet.orbitRadius * solarSystem.scale) - playerX;
-                const dy = (solarSystem.y + Math.sin(planet.orbitAngle) * planet.orbitRadius * solarSystem.scale) - playerY;
-                const dz = solarSystem.z;  // Assuming player is always at z=0
-                const distance3D = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                // Calculate 2D screen distance for easier triggering
+                const dx = planetX - playerX;
+                const dy = planetY - playerY;
+                const distance2D = Math.sqrt(dx * dx + dy * dy);
 
-                // Adjust visit threshold based on 3D distance
-                const visitThreshold = 800 * solarSystem.scale; // Increased threshold for easier triggering
+                // Adjust visit threshold based on 2D distance
+                const visitThreshold = 100 * systemScale * solarSystem.scale; // Adjusted for easier triggering
 
-                if (distance3D < visitThreshold && !isStealthMode) {
-                    planet.visitProgress += 0.02;  // Slower progress for more gradual effect
+                if (distance2D < visitThreshold && !isStealthMode) {
+                    planet.visitProgress += 0.05;  // Faster progress for quicker effect
                     if (planet.visitProgress >= 1 && !planet.visited) {
                         planet.visited = true;
                         score += 10;
@@ -1076,7 +1075,7 @@
                         console.log(`Visited planet! New score: ${score}`);
                     }
                 } else {
-                    planet.visitProgress = Math.max(0, planet.visitProgress - 0.01);
+                    planet.visitProgress = Math.max(0, planet.visitProgress - 0.02);
                 }
 
                 // Update the blue ring opacity based on visit progress
