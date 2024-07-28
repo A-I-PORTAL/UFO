@@ -688,19 +688,20 @@
         }
 // NEW
 
-
+// NEW
         function createPlanet(type, orbitRadius, orbitSpeed) {
             const planet = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            
             const planetBody = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             planetBody.setAttribute("r", 40);
             planetBody.setAttribute("fill", `url(#${type}Gradient)`);
             planet.appendChild(planetBody);
 
             const blueRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            blueRing.setAttribute("r", 45);
+            blueRing.setAttribute("r", 50);  // Slightly larger than the planet
             blueRing.setAttribute("fill", "none");
             blueRing.setAttribute("stroke", "aqua");
-            blueRing.setAttribute("stroke-width", "2");
+            blueRing.setAttribute("stroke-width", "5");  // Thicker stroke for visibility
             blueRing.setAttribute("opacity", "0");
             planet.appendChild(blueRing);
 
@@ -730,6 +731,7 @@
                 visitProgress: 0
             };
         }
+// NEW
 
         function createAsteroid() {
             const asteroid = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -1047,7 +1049,7 @@
 // NEW
         function updatePlanetVisits(solarSystem, playerX, playerY) {
             const viewBox = gameArea.viewBox.baseVal;
-            const systemScale = 500 / solarSystem.z;
+            const systemScale = 500 / Math.max(solarSystem.z, 1); // Prevent division by zero
             const systemX = solarSystem.x * systemScale + viewBox.width / 2;
             const systemY = solarSystem.y * systemScale + viewBox.height / 2;
 
@@ -1055,27 +1057,33 @@
                 const planetX = systemX + Math.cos(planet.orbitAngle) * planet.orbitRadius * systemScale * solarSystem.scale;
                 const planetY = systemY + Math.sin(planet.orbitAngle) * planet.orbitRadius * systemScale * solarSystem.scale;
 
-                const dx = planetX - playerX;
-                const dy = planetY - playerY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const visitThreshold = 200 * systemScale * solarSystem.scale;
+                // Calculate 3D distance
+                const dx = (solarSystem.x + Math.cos(planet.orbitAngle) * planet.orbitRadius * solarSystem.scale) - playerX;
+                const dy = (solarSystem.y + Math.sin(planet.orbitAngle) * planet.orbitRadius * solarSystem.scale) - playerY;
+                const dz = solarSystem.z;  // Assuming player is always at z=0
+                const distance3D = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-                if (distance < visitThreshold && !isStealthMode) {
-                    planet.visitProgress += 0.05;
+                // Adjust visit threshold based on 3D distance
+                const visitThreshold = 800 * solarSystem.scale; // Increased threshold for easier triggering
+
+                if (distance3D < visitThreshold && !isStealthMode) {
+                    planet.visitProgress += 0.02;  // Slower progress for more gradual effect
                     if (planet.visitProgress >= 1 && !planet.visited) {
                         planet.visited = true;
                         score += 10;
                         updateScoreDisplay();
                         soundManager.playSound('planetVisit');
+                        console.log(`Visited planet! New score: ${score}`);
                     }
                 } else {
-                    planet.visitProgress = Math.max(0, planet.visitProgress - 0.02);
+                    planet.visitProgress = Math.max(0, planet.visitProgress - 0.01);
                 }
 
                 // Update the blue ring opacity based on visit progress
                 planet.blueRing.setAttribute('opacity', planet.visitProgress.toFixed(2));
             });
         }
+// NEW
 
         function updateGame() {
             if (isPaused) return;
