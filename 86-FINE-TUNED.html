@@ -984,41 +984,37 @@
             const reverseDirection = starSpeedY < 0;
             const currentTime = Date.now();
             
-            // Debug logging
-            if (currentTime - debugLastSpawnTime > 5000) {  // Log every 5 seconds
-                console.log(`Solar systems spawned in last 5 seconds: ${debugSpawnCount}`);
-                console.log(`Current solar system count: ${solarSystems.length}`);
-                console.log(`Time since last spawn: ${currentTime - lastSolarSystemSpawnTime}ms`);
-                console.log(`Next spawn interval: ${nextSolarSystemSpawnInterval}ms`);
-                debugLastSpawnTime = currentTime;
-                debugSpawnCount = 0;
-            }
+            console.log(`Current solar system count: ${solarSystems.length}`);
+            console.log(`Time since last spawn: ${currentTime - lastSolarSystemSpawnTime}ms`);
+            console.log(`Next spawn interval: ${nextSolarSystemSpawnInterval}ms`);
 
             // Check if it's time to spawn a new solar system
             if (currentTime - lastSolarSystemSpawnTime > nextSolarSystemSpawnInterval) {
-                // Only spawn if all current systems are out of view
-                if (solarSystems.every(system => system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 3)) {
-                    const desiredSolarSystemCount = 1; // Always spawn 1 system at a time
+                console.log("Spawn interval reached");
+                // Only spawn if there are no solar systems or all current systems are out of view
+                if (solarSystems.length === 0 || solarSystems.every(system => system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 3)) {
+                    console.log("Conditions met for spawning");
+                    // Always spawn only one system
+                    const desiredSolarSystemCount = 1;
                     
-                    // Remove excess solar systems or add new ones as needed
-                    while (solarSystems.length > desiredSolarSystemCount) {
+                    // Remove all existing solar systems
+                    while (solarSystems.length > 0) {
                         const removedSystem = solarSystems.pop();
                         solarSystemsGroup.removeChild(removedSystem.element);
                     }
-                    while (solarSystems.length < desiredSolarSystemCount) {
-                        solarSystems.push(createSolarSystem());
-                        debugSpawnCount++;
-                    }
+                    
+                    // Add one new solar system
+                    solarSystems.push(createSolarSystem());
+                    console.log("New solar system spawned");
 
                     // Set the time for the next spawn
                     lastSolarSystemSpawnTime = currentTime;
                     
-                    // Randomize the next spawn interval (100x less frequent than before)
-                    const minSpawnInterval = 10000; // Minimum time between spawns (10 seconds)
-                    const maxSpawnInterval = 300000; // Maximum time between spawns (5 minutes)
+                    // Randomize the next spawn interval (much less frequent)
+                    const minSpawnInterval = 300000; // Minimum time between spawns (5 minutes)
+                    const maxSpawnInterval = 900000; // Maximum time between spawns (15 minutes)
                     nextSolarSystemSpawnInterval = minSpawnInterval + Math.random() * (maxSpawnInterval - minSpawnInterval);
-
-                    console.log(`Spawned a solar system. Next spawn in ${nextSolarSystemSpawnInterval / 1000} seconds.`);
+                    console.log(`Next spawn in ${nextSolarSystemSpawnInterval / 1000} seconds`);
                 }
             }
             
@@ -1026,56 +1022,42 @@
                 const system = solarSystems[i];
                 system.z -= starSpeedY * 10;
                 system.x -= starSpeedX * 10;
-                // Remove scaling effect
-                system.scale = 1;
+                
                 // Calculate fade based on distance from initial spawn point
                 const distanceFromSpawn = Math.abs(system.z - system.initialSpawnDistance);
-                const fadeThreshold = SOLAR_SYSTEM_SPAWN_DISTANCE * 3.0; // Adjust this value (range: 1.0 to 5.0) to change fade distance
+                const fadeThreshold = SOLAR_SYSTEM_SPAWN_DISTANCE * 3.0;
                 const fadeProgress = Math.min(distanceFromSpawn / fadeThreshold, 1);
+                
                 if (system.z <= 0 || system.z > SOLAR_SYSTEM_SPAWN_DISTANCE * 2) {
-                    const angle = Math.random() * Math.PI * 2;
-                    system.x = Math.cos(angle) * SOLAR_SYSTEM_SPAWN_DISTANCE;
-                    system.y = Math.sin(angle) * SOLAR_SYSTEM_SPAWN_DISTANCE;
-                    // Randomize spawn distance
-                    const minSpawnDistance = SOLAR_SYSTEM_SPAWN_DISTANCE * 1.5; // Minimum spawn distance (adjust range: 1.0 to 2.0)
-                    const maxSpawnDistance = SOLAR_SYSTEM_SPAWN_DISTANCE * 3.0; // Maximum spawn distance (adjust range: 2.0 to 4.0)
-                    system.z = reverseDirection ? 0 : minSpawnDistance + Math.random() * (maxSpawnDistance - minSpawnDistance);
-                    system.opacity = 0;
-                    system.scale = 0.01 + Math.random() * 9.99; // Randomize initial scale (range: 0.01 to 10.0)
-                    system.initialSpawnDistance = system.z;
+                    console.log("Solar system out of view, removing");
+                    solarSystemsGroup.removeChild(system.element);
+                    solarSystems.splice(i, 1);
+                } else {
+                    const scale = 500 / system.z;
+                    const x = system.x * scale + viewBox.width / 2;
+                    const y = system.y * scale + viewBox.height / 2;
+                    system.opacity = 1 - fadeProgress;
+                    const sizeMultiplier = 5.0; 
+                    system.element.setAttribute('transform', `translate(${x}, ${y}) scale(${scale * system.scale * sizeMultiplier})`);
+                    system.element.setAttribute('opacity', system.opacity);
                     
-                    // Reset planet visitation status when respawning
+                    // Update planets
                     system.planets.forEach(planet => {
-                        planet.visited = false;
-                        planet.visitProgress = 0;
-                        planet.blueRing.setAttribute('opacity', '0');
+                        planet.orbitAngle += planet.orbitSpeed;
+                        const planetX = Math.cos(planet.orbitAngle) * planet.orbitRadius;
+                        const planetY = Math.sin(planet.orbitAngle) * planet.orbitRadius;
+                        planet.element.setAttribute('transform', `translate(${planetX}, ${planetY})`);
+                        // Update moons
+                        planet.moons.forEach(moon => {
+                            moon.angle += moon.speed;
+                            const moonX = Math.cos(moon.angle) * moon.distance;
+                            const moonY = Math.sin(moon.angle) * moon.distance;
+                            moon.element.setAttribute('cx', moonX);
+                            moon.element.setAttribute('cy', moonY);
+                        });
                     });
+                    updatePlanetVisits(system, playerX, playerY);
                 }
-                const scale = 500 / system.z;
-                const x = system.x * scale + viewBox.width / 2;
-                const y = system.y * scale + viewBox.height / 2;
-                // Update opacity based on fade progress
-                system.opacity = 1 - fadeProgress;
-                // Adjust the multiplier (range: 1.0 to 5.0) to increase maximum size when close
-                const sizeMultiplier = 5.0; 
-                system.element.setAttribute('transform', `translate(${x}, ${y}) scale(${scale * system.scale * sizeMultiplier})`);
-                system.element.setAttribute('opacity', system.opacity);
-                // Update planets
-                system.planets.forEach(planet => {
-                    planet.orbitAngle += planet.orbitSpeed;
-                    const planetX = Math.cos(planet.orbitAngle) * planet.orbitRadius;
-                    const planetY = Math.sin(planet.orbitAngle) * planet.orbitRadius;
-                    planet.element.setAttribute('transform', `translate(${planetX}, ${planetY})`);
-                    // Update moons
-                    planet.moons.forEach(moon => {
-                        moon.angle += moon.speed;
-                        const moonX = Math.cos(moon.angle) * moon.distance;
-                        const moonY = Math.sin(moon.angle) * moon.distance;
-                        moon.element.setAttribute('cx', moonX);
-                        moon.element.setAttribute('cy', moonY);
-                    });
-                });
-                updatePlanetVisits(system, playerX, playerY);
             }
         }
 // NEW
@@ -1723,10 +1705,10 @@
             }
         }
 
-        // Initialize the game
+// NEW
         function initGame() {
             createStars(200);
-            for (let i = 0; i < 3; i++) solarSystems.push(createSolarSystem());
+            // Remove initial solar system creation
             for (let i = 0; i < 5; i++) asteroids.push(createAsteroid());
             updateScoreDisplay();
             updateHealthDisplay();
@@ -1745,12 +1727,14 @@
             setupMuteButton();
             setupPauseButton();
             soundManager.playBackgroundMusic();
-            // Initialize solar system spawn time
+            
+            // Initialize solar system spawn variables
             lastSolarSystemSpawnTime = Date.now();
-            // Set initial spawn interval (you can adjust this value)
-            nextSolarSystemSpawnInterval = 15000; // 15 seconds
+            nextSolarSystemSpawnInterval = 60000; // First spawn after 1 minute
+            
             updateGame();
         }
+// NEW
 
         function showStartPage() {
             startPage.style.display = 'flex';
