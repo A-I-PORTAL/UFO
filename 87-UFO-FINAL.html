@@ -194,6 +194,34 @@
             color: white;
             font-family: 'Varela Round', sans-serif;
         }
+        // NEW
+        .toggle-container {
+            width: 60px;
+            height: 30px;
+            background-color: #333;
+            border-radius: 15px;
+            display: inline-block;
+            position: relative;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .toggle-button {
+            width: 26px;
+            height: 26px;
+            background-color: #fff;
+            border-radius: 13px;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: 0.2s;
+        }
+        .toggle-container.active {
+            background-color: #4CAF50;
+        }
+        .toggle-container.active .toggle-button {
+            left: 32px;
+        }
+// NEW
     </style>
 </head>
 <body>
@@ -344,7 +372,18 @@
                 <li><span style="color: aqua;">•</span> Click the blue button to activate stealth mode</li>
             </ul>
         </div>
+// NEW
+        <div id="peacefulModeContainer" style="margin-top: 20px;">
+            <label for="peacefulModeToggle" style="color: aqua;">Peaceful Mode:</label>
+            <div id="peacefulModeToggle" class="toggle-container">
+                <div class="toggle-button"></div>
+            </div>
+        </div>
+// NEW
     </div>
+    
+
+    
 
     <script>
         // Sound Manager Class
@@ -1057,16 +1096,17 @@
                 const planetX = systemX + Math.cos(planet.orbitAngle) * planet.orbitRadius * systemScale * solarSystem.scale;
                 const planetY = systemY + Math.sin(planet.orbitAngle) * planet.orbitRadius * systemScale * solarSystem.scale;
 
-                // Calculate 2D screen distance for easier triggering
-                const dx = planetX - playerX;
-                const dy = planetY - playerY;
-                const distance2D = Math.sqrt(dx * dx + dy * dy);
+                // Calculate 3D distance for more accurate triggering
+                const dx = (solarSystem.x + Math.cos(planet.orbitAngle) * planet.orbitRadius * solarSystem.scale) - playerX;
+                const dy = (solarSystem.y + Math.sin(planet.orbitAngle) * planet.orbitRadius * solarSystem.scale) - playerY;
+                const dz = solarSystem.z;
+                const distance3D = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-                // Adjust visit threshold based on 2D distance and system scale
-                const visitThreshold = 200 * systemScale * solarSystem.scale; // Increased for easier triggering
+                // Adjust visit threshold based on 3D distance and system scale
+                const visitThreshold = 300 * solarSystem.scale; // Increased for easier triggering
 
-                if (distance2D < visitThreshold && !isStealthMode) {
-                    planet.visitProgress += 0.1; // Faster progress for quicker effect
+                if (distance3D < visitThreshold && !isStealthMode) {
+                    planet.visitProgress += 0.05; // Slower progress for more control
                     if (planet.visitProgress >= 1 && !planet.visited) {
                         planet.visited = true;
                         score += 10;
@@ -1079,14 +1119,14 @@
                     planet.visitProgress = 1;
                 } else {
                     // Slower decrease for non-visited planets
-                    planet.visitProgress = Math.max(0, planet.visitProgress - 0.01);
+                    planet.visitProgress = Math.max(0, planet.visitProgress - 0.005);
                 }
 
                 // Update the blue ring opacity based on visit progress
                 planet.blueRing.setAttribute('opacity', planet.visitProgress.toFixed(2));
                 
                 // Make the blue ring more visible
-                planet.blueRing.setAttribute('stroke-width', (5 * systemScale * solarSystem.scale).toString());
+                planet.blueRing.setAttribute('stroke-width', (8 * systemScale * solarSystem.scale).toString());
                 planet.blueRing.setAttribute('stroke', 'aqua');
             });
         }
@@ -1216,31 +1256,33 @@
             const dy = playerY - enemy.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            // Always move, but adjust speed based on stealth mode
-            const speed = isStealthMode ? ENEMY_SPEED * 0.5 : ENEMY_SPEED;
-            
-            if (distance > 10) { // Prevent jittering when very close
-                enemy.dx = (dx / distance) * speed;
-                enemy.dy = (dy / distance) * speed;
+            if (!isStealthMode && !isPeacefulMode) {
+                // Follow player when not in stealth mode
+                enemy.dx = (dx / distance) * ENEMY_SPEED;
+                enemy.dy = (dy / distance) * ENEMY_SPEED;
             } else {
-                enemy.dx = 0;
-                enemy.dy = 0;
-            }
-
-            // Play enemy sound when close to player and not in stealth mode
-            if (!isStealthMode && distance < 300 && !enemy.soundPlayed) {
-                soundManager.playSound('enemyAppear');
-                enemy.soundPlayed = true;
-            } else if (distance >= 300) {
-                enemy.soundPlayed = false;
+                // Wander aimlessly
+                if (!enemy.wanderAngle) {
+                    enemy.wanderAngle = Math.random() * Math.PI * 2;
+                }
+                enemy.wanderAngle += (Math.random() - 0.5) * 0.1; // Slightly change direction
+                enemy.dx = Math.cos(enemy.wanderAngle) * (ENEMY_SPEED * 0.5);
+                enemy.dy = Math.sin(enemy.wanderAngle) * (ENEMY_SPEED * 0.5);
             }
             
             enemy.x += enemy.dx;
             enemy.y += enemy.dy;
 
-            // Update enemy rotation (point towards movement direction)
-            const angle = Math.atan2(enemy.dy, enemy.dx);
-            enemy.element.setAttribute('transform', `translate(${enemy.x},${enemy.y}) rotate(${angle * 180 / Math.PI})`);
+            // Keep enemies upright
+            enemy.element.setAttribute('transform', `translate(${enemy.x},${enemy.y})`);
+
+            // Play enemy sound when close to player and not in stealth mode
+            if (!isStealthMode && !isPeacefulMode && distance < 300 && !enemy.soundPlayed) {
+                soundManager.playSound('enemyAppear');
+                enemy.soundPlayed = true;
+            } else if (distance >= 300) {
+                enemy.soundPlayed = false;
+            }
 
             // Update smoke trail
             enemy.smokeTrail.unshift({x: enemy.x, y: enemy.y, age: 0});
@@ -1264,7 +1306,7 @@
             }
 
             // Check collision with player
-            if (!isStealthMode && distance < 60) {
+            if (!isStealthMode && !isPeacefulMode && distance < 60) {
                 health -= 10;
                 enemiesGroup.removeChild(enemy.element);
                 enemies.splice(i, 1);
@@ -1728,7 +1770,10 @@
             setupTouchEvents();
             setupMuteButton();
             setupPauseButton();
+            setupPeacefulModeToggle();
+            isPeacefulMode = document.getElementById('peacefulModeToggle').classList.contains('active');
             soundManager.playBackgroundMusic();
+        }
             
             // Clear any existing solar systems
             while (solarSystems.length > 0) {
@@ -1765,6 +1810,19 @@
 
         // Show the start page initially
         showStartPage();
+// NEW
+        let isPeacefulMode = false;
+
+        function setupPeacefulModeToggle() {
+            const toggleContainer = document.getElementById('peacefulModeToggle');
+            const toggleButton = toggleContainer.querySelector('.toggle-button');
+
+            toggleContainer.addEventListener('click', () => {
+                isPeacefulMode = !isPeacefulMode;
+                toggleContainer.classList.toggle('active', isPeacefulMode);
+                toggleButton.style.transform = isPeacefulMode ? 'translateX(30px)' : 'translateX(0)';
+            });
+
     </script>
 </body>
 </html> 
