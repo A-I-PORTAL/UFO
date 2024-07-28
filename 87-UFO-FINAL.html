@@ -1062,11 +1062,11 @@
                 const dy = planetY - playerY;
                 const distance2D = Math.sqrt(dx * dx + dy * dy);
 
-                // Adjust visit threshold based on 2D distance
-                const visitThreshold = 100 * systemScale * solarSystem.scale; // Adjusted for easier triggering
+                // Adjust visit threshold based on 2D distance and system scale
+                const visitThreshold = 200 * systemScale * solarSystem.scale; // Increased for easier triggering
 
                 if (distance2D < visitThreshold && !isStealthMode) {
-                    planet.visitProgress += 0.05;  // Faster progress for quicker effect
+                    planet.visitProgress += 0.1; // Faster progress for quicker effect
                     if (planet.visitProgress >= 1 && !planet.visited) {
                         planet.visited = true;
                         score += 10;
@@ -1074,12 +1074,20 @@
                         soundManager.playSound('planetVisit');
                         console.log(`Visited planet! New score: ${score}`);
                     }
+                } else if (planet.visited) {
+                    // Keep the ring visible if the planet has been visited
+                    planet.visitProgress = 1;
                 } else {
-                    planet.visitProgress = Math.max(0, planet.visitProgress - 0.02);
+                    // Slower decrease for non-visited planets
+                    planet.visitProgress = Math.max(0, planet.visitProgress - 0.01);
                 }
 
                 // Update the blue ring opacity based on visit progress
                 planet.blueRing.setAttribute('opacity', planet.visitProgress.toFixed(2));
+                
+                // Make the blue ring more visible
+                planet.blueRing.setAttribute('stroke-width', (5 * systemScale * solarSystem.scale).toString());
+                planet.blueRing.setAttribute('stroke', 'aqua');
             });
         }
 // NEW
